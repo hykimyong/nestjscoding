@@ -8,14 +8,15 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
-import { lastValueFrom } from 'rxjs';
-import { from } from 'rxjs';
+import { lastValueFrom, from } from 'rxjs';
+
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiProperty,
 } from '@nestjs/swagger';
+import { LoginDto } from './dto/login.dto';
 
 class CreateEventDto {
   @ApiProperty({
@@ -44,7 +45,7 @@ interface AuthService {
   login(data: {
     username: string;
     password: string;
-  }): Promise<{ access_token: string }>;
+  }): Promise<{ accessToken: string }>;
 }
 
 interface EventService {
@@ -57,8 +58,8 @@ interface EventService {
 
 @ApiTags('auth')
 @Controller()
-export class AppController {
-  private readonly logger = new Logger(AppController.name);
+export class GatewayController {
+  private readonly logger = new Logger(GatewayController.name);
   private authService: AuthService;
   private eventService: EventService;
 
@@ -75,29 +76,30 @@ export class AppController {
   @ApiOperation({ summary: 'Login to get JWT token' })
   @ApiResponse({ status: 200, description: 'Login successful.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async login(@Body() data: { username: string; password: string }) {
+  async login(@Body() loginDto: LoginDto) {
     try {
-      this.logger.debug(`Login attempt for user: ${data.username}`);
-      this.logger.debug('Calling auth service login method...');
-      const result = await lastValueFrom(
-        from(
-          this.authService.login({
-            username: data.username,
-            password: data.password,
-          }),
-        ),
+      console.log('Attempting login for user:', loginDto.username);
+      const response = await lastValueFrom(
+        from(this.authService.login(loginDto)),
       );
-      this.logger.debug(
-        `Login response from auth service: ${JSON.stringify(result)}`,
-      );
-      if (!result || !result.access_token) {
+      console.log('Auth service response:', response);
+
+      if (!response || !response.accessToken) {
+        console.error('Invalid response from auth service:', response);
         throw new Error('Invalid response from auth service');
       }
-      return { access_token: result.access_token };
+
+      return {
+        access_token: response.accessToken,
+        user: {
+          username: loginDto.username,
+        },
+      };
     } catch (error) {
-      this.logger.error(
-        `Login failed for user ${data.username}: ${error.message}`,
-        error.stack,
+      console.error(
+        'Login failed for user',
+        loginDto.username + ':',
+        error.message,
       );
       throw new HttpException(
         'Authentication failed',

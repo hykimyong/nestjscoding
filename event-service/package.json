@@ -12,7 +12,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:dev": "nest start --watch",
+    "start:dev": "lsof -ti:50152 | xargs kill -9 2>/dev/null || true && npm run proto:build && nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "proto:build": "buf generate src/proto"
+    "proto:build": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt=addGrpcMetadata=true --ts_proto_out=./ src/proto/event.proto --ts_proto_opt=outputEncodeMethods=true,outputJsonMethods=false,outputClientImpl=false"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.13.3",
@@ -57,6 +57,7 @@
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
+    "ts-proto": "^2.7.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   },

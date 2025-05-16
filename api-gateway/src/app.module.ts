@@ -1,19 +1,23 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { JwtModule } from '@nestjs/jwt';
 import { join } from 'path';
-import { AppController } from './app.controller';
+import { GatewayController } from './gateway.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ClientsModule.register([
       {
         name: 'AUTH_PACKAGE',
         transport: Transport.GRPC,
         options: {
           package: 'auth',
-          protoPath: join(__dirname, '../src/proto/auth.proto'),
+          protoPath: join(__dirname, '../dist/proto/auth.proto'),
           url: process.env.AUTH_SERVICE_URL || 'localhost:50151',
         },
       },
@@ -22,13 +26,17 @@ import { AppController } from './app.controller';
         transport: Transport.GRPC,
         options: {
           package: 'event',
-          protoPath: join(__dirname, '../src/proto/event.proto'),
+          protoPath: join(__dirname, '../dist/proto/event.proto'),
           url: process.env.EVENT_SERVICE_URL || 'localhost:50152',
         },
       },
     ]),
+    JwtModule.register({
+      secret: 'your-secret-key',
+      signOptions: { expiresIn: '1h' },
+    }),
   ],
-  controllers: [AppController],
-  providers: [],
+  controllers: [GatewayController],
+  providers: [AppService],
 })
 export class AppModule {}
