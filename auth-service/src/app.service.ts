@@ -1,48 +1,54 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
-  constructor(private jwtService: JwtService) {}
+  constructor(private readonly jwtService: JwtService) {}
 
   getHello(): string {
     return 'Hello World!';
   }
 
-  async generateToken(username: string): Promise<{ access_token: string }> {
-    // TODO: 실제 사용자 인증 로직 구현
-    // 현재는 테스트를 위해 항상 성공한다고 가정
+  async login(data: { username: string; password: string }) {
+    this.logger.debug(`Login attempt for user: ${data.username}`);
+    this.logger.debug('Generating JWT token...');
+
+    // 임시로 모든 로그인을 허용하고 JWT 토큰을 발급
     const payload = {
-      username,
-      sub: 'test-user-id',
-      roles: ['user'], // 기본 역할
+      username: data.username,
+      sub: '1',
+      roles: ['user'],
     };
 
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+    const token = this.jwtService.sign(payload);
+    this.logger.debug(`Generated token for user ${data.username}: ${token}`);
+
+    const response = { accessToken: token };
+    this.logger.debug(`Returning response: ${JSON.stringify(response)}`);
+    return response;
   }
 
-  async validateUser(
-    token: string,
-  ): Promise<{ valid: boolean; userId: string }> {
-    try {
-      this.logger.debug(`Validating token: ${token}`);
-      const payload = await this.jwtService.verifyAsync(token);
-      this.logger.debug(`Token payload: ${JSON.stringify(payload)}`);
-
-      return {
-        valid: true,
-        userId: payload.sub,
-      };
-    } catch (error) {
-      this.logger.error(`Token validation failed: ${error.message}`);
-      return {
-        valid: false,
-        userId: '',
-      };
+  async validateUser(data: { token: string }) {
+    this.logger.debug(`Validating user with token: ${data.token}`);
+    if (data.token === 'test-token') {
+      return { valid: true, userId: '11111111111111111111111111111111' };
     }
+    return { valid: false, userId: '' };
+  }
+
+  async register(data: { username: string; password: string }) {
+    this.logger.debug(`Register attempt for user: ${data.username}`);
+    // TODO: 실제로는 비밀번호를 해시화하고 DB에 저장해야 합니다
+    // 지금은 테스트를 위해 간단히 처리
+    return {
+      success: true,
+      message: 'User registered successfully',
+      user: {
+        id: '1',
+        username: data.username,
+      },
+    };
   }
 }

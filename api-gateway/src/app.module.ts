@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { join } from 'path';
 import { GatewayController } from './gateway.controller';
 import { AppService } from './app.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -35,8 +37,9 @@ import { AppService } from './app.service';
       secret: 'your-secret-key',
       signOptions: { expiresIn: '1h' },
     }),
+    PassportModule,
   ],
   controllers: [GatewayController],
-  providers: [AppService],
+  providers: [AppService, JwtStrategy],
 })
 export class AppModule {}
