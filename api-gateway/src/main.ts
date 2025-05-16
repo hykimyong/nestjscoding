@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { VersioningType } from '@nestjs/common';
-import swaggerConfig from './configs/swagger.config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('v1');
 
-  app.enableCors(); // Not for production, just develop environments
+  // Enable CORS for development
+  app.enableCors();
   /*
   app.enableCors({
     origin: ['add url'],
@@ -14,13 +15,14 @@ async function bootstrap() {
   });
   */
 
-  app.enableVersioning({
-    type: VersioningType.URI,
-    prefix: 'v',
-    defaultVersion: '1',
-  });
-
-  await swaggerConfig(app);
+  const config = new DocumentBuilder()
+    .setTitle('Event API')
+    .setDescription('The Event API description')
+    .setVersion('1.0')
+    .addTag('events')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
 
   await app.listen(3000);
 }

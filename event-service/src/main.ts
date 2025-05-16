@@ -1,27 +1,17 @@
 import { NestFactory } from '@nestjs/core';
+import { Transport } from '@nestjs/microservices';
+import { join } from 'path';
 import { AppModule } from './app.module';
-import { VersioningType } from '@nestjs/common';
-import swaggerConfig from './configs/swagger.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  app.enableCors(); // Not for production, just develop environments
-  /*
-  app.enableCors({
-    origin: ['add url'],
-    credentials: true,
+  const app = await NestFactory.createMicroservice(AppModule, {
+    transport: Transport.GRPC,
+    options: {
+      package: 'event',
+      protoPath: join(__dirname, '../src/proto/event.proto'),
+      url: '0.0.0.0:50152',
+    },
   });
-  */
-
-  app.enableVersioning({
-    type: VersioningType.URI,
-    prefix: 'v',
-    defaultVersion: '1',
-  });
-
-  await swaggerConfig(app);
-
-  await app.listen(3000);
+  await app.listen();
 }
 bootstrap();
