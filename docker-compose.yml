@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   mongodb:
     image: mongo:latest
@@ -12,52 +14,50 @@ services:
     volumes:
       - mongodb_data:/data/db
     command: mongod --auth
+    networks:
+      - app-network
 
   api-gateway:
-    image: node:18-alpine
+    build: ./api-gateway
     container_name: api-gateway
-    working_dir: /usr/src/app
-    volumes:
-      - ./api-gateway:/usr/src/app
     ports:
       - "3000:3000"
-    command: sh -c "npm install && npm run build && npm run start:prod"
     depends_on:
-      - mongodb
+      - auth-service
+      - event-service
     environment:
-      - MONGODB_URI=mongodb://root:example@mongodb:27017
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - EVENT_SERVICE_URL=http://event-service:3002
+      - AUTH_SERVICE_URL=auth-service:50151
+      - EVENT_SERVICE_URL=event-service:50152
+    networks:
+      - app-network
 
   auth-service:
-    image: node:18-alpine
+    build: ./auth-service
     container_name: auth-service
-    working_dir: /usr/src/app
-    volumes:
-      - ./auth-service:/usr/src/app
     ports:
-      - "3001:3001"
-    command: sh -c "npm install && npm run build && npm run start:prod"
+      - "50151:50151"
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://root:example@mongodb:27017
-      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/auth
+    networks:
+      - app-network
 
   event-service:
-    image: node:18-alpine
+    build: ./event-service
     container_name: event-service
-    working_dir: /usr/src/app
-    volumes:
-      - ./event-service:/usr/src/app
     ports:
-      - "3002:3002"
-    command: sh -c "npm install && npm run build && npm run start:prod"
+      - "50152:50152"
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://root:example@mongodb:27017
-      - PORT=3002
+      - MONGODB_URI=mongodb://mongodb:27017/events
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
-  mongodb_data: 
+  mongodb_data:
