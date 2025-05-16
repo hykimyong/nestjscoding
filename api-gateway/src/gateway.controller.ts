@@ -10,33 +10,8 @@ import {
 import { ClientGrpc } from '@nestjs/microservices';
 import { lastValueFrom, from } from 'rxjs';
 
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiProperty,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
-
-class CreateEventDto {
-  @ApiProperty({
-    description: 'Event title',
-    example: 'Test Event',
-  })
-  title: string;
-
-  @ApiProperty({
-    description: 'Event description',
-    example: 'This is a test event',
-  })
-  description: string;
-
-  @ApiProperty({
-    description: 'Authentication token',
-    example: 'test-token',
-  })
-  token: string;
-}
 
 interface AuthService {
   validateUser(data: {
@@ -46,6 +21,11 @@ interface AuthService {
     username: string;
     password: string;
   }): Promise<{ accessToken: string }>;
+  register(data: { username: string; password: string }): Promise<{
+    success: boolean;
+    message: string;
+    user: { id: string; username: string };
+  }>;
 }
 
 interface EventService {
@@ -103,6 +83,40 @@ export class GatewayController {
       );
       throw new HttpException(
         'Authentication failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User successfully registered.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  async register(@Body() registerDto: LoginDto) {
+    try {
+      console.log('Attempting to register user:', registerDto.username);
+      const response = await lastValueFrom(
+        from(this.authService.register(registerDto)),
+      );
+      console.log('Auth service response:', response);
+
+      if (!response || !response.success) {
+        console.error('Invalid response from auth service:', response);
+        throw new Error('Registration failed');
+      }
+
+      return {
+        message: response.message,
+        user: response.user,
+      };
+    } catch (error) {
+      console.error(
+        'Registration failed for user',
+        registerDto.username + ':',
+        error.message,
+      );
+      throw new HttpException(
+        'Registration failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

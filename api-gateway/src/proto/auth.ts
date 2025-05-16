@@ -28,6 +28,22 @@ export interface LoginResponse {
   accessToken: string;
 }
 
+export interface RegisterRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
+  user: User | undefined;
+}
+
+export interface User {
+  id: string;
+  username: string;
+}
+
 function createBaseValidateUserRequest(): ValidateUserRequest {
   return { token: "" };
 }
@@ -236,9 +252,196 @@ export const LoginResponse: MessageFns<LoginResponse> = {
   },
 };
 
+function createBaseRegisterRequest(): RegisterRequest {
+  return { username: "", password: "" };
+}
+
+export const RegisterRequest: MessageFns<RegisterRequest> = {
+  encode(message: RegisterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.username !== "") {
+      writer.uint32(10).string(message.username);
+    }
+    if (message.password !== "") {
+      writer.uint32(18).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RegisterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRegisterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<RegisterRequest>, I>>(base?: I): RegisterRequest {
+    return RegisterRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RegisterRequest>, I>>(object: I): RegisterRequest {
+    const message = createBaseRegisterRequest();
+    message.username = object.username ?? "";
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseRegisterResponse(): RegisterResponse {
+  return { success: false, message: "", user: undefined };
+}
+
+export const RegisterResponse: MessageFns<RegisterResponse> = {
+  encode(message: RegisterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.user !== undefined) {
+      User.encode(message.user, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RegisterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRegisterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.user = User.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<RegisterResponse>, I>>(base?: I): RegisterResponse {
+    return RegisterResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RegisterResponse>, I>>(object: I): RegisterResponse {
+    const message = createBaseRegisterResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
+    return message;
+  },
+};
+
+function createBaseUser(): User {
+  return { id: "", username: "" };
+}
+
+export const User: MessageFns<User> = {
+  encode(message: User, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): User {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUser();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<User>, I>>(base?: I): User {
+    return User.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<User>, I>>(object: I): User {
+    const message = createBaseUser();
+    message.id = object.id ?? "";
+    message.username = object.username ?? "";
+    return message;
+  },
+};
+
 export interface AuthService {
   ValidateUser(request: ValidateUserRequest, metadata?: Metadata): Promise<ValidateUserResponse>;
   Login(request: LoginRequest, metadata?: Metadata): Promise<LoginResponse>;
+  Register(request: RegisterRequest, metadata?: Metadata): Promise<RegisterResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

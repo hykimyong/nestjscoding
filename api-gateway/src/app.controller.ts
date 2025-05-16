@@ -10,32 +10,7 @@ import {
 import { ClientGrpc } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
 import { from } from 'rxjs';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiProperty,
-} from '@nestjs/swagger';
-
-class CreateEventDto {
-  @ApiProperty({
-    description: 'Event title',
-    example: 'Test Event',
-  })
-  title: string;
-
-  @ApiProperty({
-    description: 'Event description',
-    example: 'This is a test event',
-  })
-  description: string;
-
-  @ApiProperty({
-    description: 'Authentication token',
-    example: 'test-token',
-  })
-  token: string;
-}
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 interface AuthService {
   validateUser(data: {
