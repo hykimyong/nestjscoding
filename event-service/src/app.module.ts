@@ -1,24 +1,18 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { EventController } from './event.controller';
 import { AppService } from './app.service';
-import { EventService } from './event/event.service';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-      }),
-      inject: [ConfigService],
-    }),
+    ConfigModule.forRoot(),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance',
+    ),
+    EventModule,
   ],
-  controllers: [EventController],
-  providers: [AppService, EventService],
+  controllers: [],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -16,12 +16,66 @@ export interface CreateEventRequest {
   userId: string;
 }
 
-export interface CreateEventResponse {
+export interface Event {
   id: string;
   title: string;
   description: string;
   userId: string;
   createdAt: string;
+}
+
+export interface CreateAttendanceEventRequest {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  userId: string;
+  isActive: boolean;
+  requiredDays: number;
+}
+
+export interface AttendanceEvent {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  userId: string;
+  type: string;
+  createdAt: string;
+  isActive: boolean;
+  requiredDays: number;
+}
+
+export interface CreateAttendanceEventResponse {
+  success: boolean;
+  message: string;
+  data: AttendanceEvent | undefined;
+}
+
+export interface ListEventsRequest {
+  page: number;
+  limit: number;
+  searchKeyword: string;
+}
+
+export interface ListEventsResponse {
+  success: boolean;
+  message: string;
+  events: AttendanceEvent[];
+  total: number;
+  currentPage: number;
+  totalPages: number;
+}
+
+export interface GetEventDetailRequest {
+  eventId: string;
+}
+
+export interface GetEventDetailResponse {
+  success: boolean;
+  message: string;
+  event: AttendanceEvent | undefined;
 }
 
 function createBaseCreateEventRequest(): CreateEventRequest {
@@ -94,12 +148,12 @@ export const CreateEventRequest: MessageFns<CreateEventRequest> = {
   },
 };
 
-function createBaseCreateEventResponse(): CreateEventResponse {
+function createBaseEvent(): Event {
   return { id: "", title: "", description: "", userId: "", createdAt: "" };
 }
 
-export const CreateEventResponse: MessageFns<CreateEventResponse> = {
-  encode(message: CreateEventResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Event: MessageFns<Event> = {
+  encode(message: Event, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -118,10 +172,10 @@ export const CreateEventResponse: MessageFns<CreateEventResponse> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CreateEventResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): Event {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateEventResponse();
+    const message = createBaseEvent();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -174,11 +228,11 @@ export const CreateEventResponse: MessageFns<CreateEventResponse> = {
     return message;
   },
 
-  create<I extends Exact<DeepPartial<CreateEventResponse>, I>>(base?: I): CreateEventResponse {
-    return CreateEventResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Event>, I>>(base?: I): Event {
+    return Event.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CreateEventResponse>, I>>(object: I): CreateEventResponse {
-    const message = createBaseCreateEventResponse();
+  fromPartial<I extends Exact<DeepPartial<Event>, I>>(object: I): Event {
+    const message = createBaseEvent();
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
@@ -188,8 +242,665 @@ export const CreateEventResponse: MessageFns<CreateEventResponse> = {
   },
 };
 
+function createBaseCreateAttendanceEventRequest(): CreateAttendanceEventRequest {
+  return { title: "", description: "", startDate: "", endDate: "", userId: "", isActive: false, requiredDays: 0 };
+}
+
+export const CreateAttendanceEventRequest: MessageFns<CreateAttendanceEventRequest> = {
+  encode(message: CreateAttendanceEventRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(18).string(message.description);
+    }
+    if (message.startDate !== "") {
+      writer.uint32(26).string(message.startDate);
+    }
+    if (message.endDate !== "") {
+      writer.uint32(34).string(message.endDate);
+    }
+    if (message.userId !== "") {
+      writer.uint32(42).string(message.userId);
+    }
+    if (message.isActive !== false) {
+      writer.uint32(48).bool(message.isActive);
+    }
+    if (message.requiredDays !== 0) {
+      writer.uint32(56).int32(message.requiredDays);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateAttendanceEventRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateAttendanceEventRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.startDate = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.endDate = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.requiredDays = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<CreateAttendanceEventRequest>, I>>(base?: I): CreateAttendanceEventRequest {
+    return CreateAttendanceEventRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateAttendanceEventRequest>, I>>(object: I): CreateAttendanceEventRequest {
+    const message = createBaseCreateAttendanceEventRequest();
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.startDate = object.startDate ?? "";
+    message.endDate = object.endDate ?? "";
+    message.userId = object.userId ?? "";
+    message.isActive = object.isActive ?? false;
+    message.requiredDays = object.requiredDays ?? 0;
+    return message;
+  },
+};
+
+function createBaseAttendanceEvent(): AttendanceEvent {
+  return {
+    id: "",
+    title: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    userId: "",
+    type: "",
+    createdAt: "",
+    isActive: false,
+    requiredDays: 0,
+  };
+}
+
+export const AttendanceEvent: MessageFns<AttendanceEvent> = {
+  encode(message: AttendanceEvent, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.startDate !== "") {
+      writer.uint32(34).string(message.startDate);
+    }
+    if (message.endDate !== "") {
+      writer.uint32(42).string(message.endDate);
+    }
+    if (message.userId !== "") {
+      writer.uint32(50).string(message.userId);
+    }
+    if (message.type !== "") {
+      writer.uint32(58).string(message.type);
+    }
+    if (message.createdAt !== "") {
+      writer.uint32(66).string(message.createdAt);
+    }
+    if (message.isActive !== false) {
+      writer.uint32(72).bool(message.isActive);
+    }
+    if (message.requiredDays !== 0) {
+      writer.uint32(80).int32(message.requiredDays);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AttendanceEvent {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttendanceEvent();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.startDate = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.endDate = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.createdAt = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.requiredDays = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<AttendanceEvent>, I>>(base?: I): AttendanceEvent {
+    return AttendanceEvent.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AttendanceEvent>, I>>(object: I): AttendanceEvent {
+    const message = createBaseAttendanceEvent();
+    message.id = object.id ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.startDate = object.startDate ?? "";
+    message.endDate = object.endDate ?? "";
+    message.userId = object.userId ?? "";
+    message.type = object.type ?? "";
+    message.createdAt = object.createdAt ?? "";
+    message.isActive = object.isActive ?? false;
+    message.requiredDays = object.requiredDays ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateAttendanceEventResponse(): CreateAttendanceEventResponse {
+  return { success: false, message: "", data: undefined };
+}
+
+export const CreateAttendanceEventResponse: MessageFns<CreateAttendanceEventResponse> = {
+  encode(message: CreateAttendanceEventResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.data !== undefined) {
+      AttendanceEvent.encode(message.data, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateAttendanceEventResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateAttendanceEventResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.data = AttendanceEvent.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<CreateAttendanceEventResponse>, I>>(base?: I): CreateAttendanceEventResponse {
+    return CreateAttendanceEventResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateAttendanceEventResponse>, I>>(
+    object: I,
+  ): CreateAttendanceEventResponse {
+    const message = createBaseCreateAttendanceEventResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.data = (object.data !== undefined && object.data !== null)
+      ? AttendanceEvent.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseListEventsRequest(): ListEventsRequest {
+  return { page: 0, limit: 0, searchKeyword: "" };
+}
+
+export const ListEventsRequest: MessageFns<ListEventsRequest> = {
+  encode(message: ListEventsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.page !== 0) {
+      writer.uint32(8).int32(message.page);
+    }
+    if (message.limit !== 0) {
+      writer.uint32(16).int32(message.limit);
+    }
+    if (message.searchKeyword !== "") {
+      writer.uint32(26).string(message.searchKeyword);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListEventsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListEventsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.page = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.searchKeyword = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<ListEventsRequest>, I>>(base?: I): ListEventsRequest {
+    return ListEventsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListEventsRequest>, I>>(object: I): ListEventsRequest {
+    const message = createBaseListEventsRequest();
+    message.page = object.page ?? 0;
+    message.limit = object.limit ?? 0;
+    message.searchKeyword = object.searchKeyword ?? "";
+    return message;
+  },
+};
+
+function createBaseListEventsResponse(): ListEventsResponse {
+  return { success: false, message: "", events: [], total: 0, currentPage: 0, totalPages: 0 };
+}
+
+export const ListEventsResponse: MessageFns<ListEventsResponse> = {
+  encode(message: ListEventsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.events) {
+      AttendanceEvent.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.total !== 0) {
+      writer.uint32(32).int32(message.total);
+    }
+    if (message.currentPage !== 0) {
+      writer.uint32(40).int32(message.currentPage);
+    }
+    if (message.totalPages !== 0) {
+      writer.uint32(48).int32(message.totalPages);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListEventsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListEventsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.events.push(AttendanceEvent.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.total = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.currentPage = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.totalPages = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<ListEventsResponse>, I>>(base?: I): ListEventsResponse {
+    return ListEventsResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListEventsResponse>, I>>(object: I): ListEventsResponse {
+    const message = createBaseListEventsResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.events = object.events?.map((e) => AttendanceEvent.fromPartial(e)) || [];
+    message.total = object.total ?? 0;
+    message.currentPage = object.currentPage ?? 0;
+    message.totalPages = object.totalPages ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetEventDetailRequest(): GetEventDetailRequest {
+  return { eventId: "" };
+}
+
+export const GetEventDetailRequest: MessageFns<GetEventDetailRequest> = {
+  encode(message: GetEventDetailRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.eventId !== "") {
+      writer.uint32(10).string(message.eventId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetEventDetailRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetEventDetailRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<GetEventDetailRequest>, I>>(base?: I): GetEventDetailRequest {
+    return GetEventDetailRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetEventDetailRequest>, I>>(object: I): GetEventDetailRequest {
+    const message = createBaseGetEventDetailRequest();
+    message.eventId = object.eventId ?? "";
+    return message;
+  },
+};
+
+function createBaseGetEventDetailResponse(): GetEventDetailResponse {
+  return { success: false, message: "", event: undefined };
+}
+
+export const GetEventDetailResponse: MessageFns<GetEventDetailResponse> = {
+  encode(message: GetEventDetailResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.event !== undefined) {
+      AttendanceEvent.encode(message.event, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetEventDetailResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetEventDetailResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.event = AttendanceEvent.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<GetEventDetailResponse>, I>>(base?: I): GetEventDetailResponse {
+    return GetEventDetailResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetEventDetailResponse>, I>>(object: I): GetEventDetailResponse {
+    const message = createBaseGetEventDetailResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.event = (object.event !== undefined && object.event !== null)
+      ? AttendanceEvent.fromPartial(object.event)
+      : undefined;
+    return message;
+  },
+};
+
 export interface EventService {
-  CreateEvent(request: CreateEventRequest, metadata?: Metadata): Promise<CreateEventResponse>;
+  CreateEvent(request: CreateEventRequest, metadata?: Metadata): Promise<Event>;
+  CreateAttendanceEvent(
+    request: CreateAttendanceEventRequest,
+    metadata?: Metadata,
+  ): Promise<CreateAttendanceEventResponse>;
+  ListEvents(request: ListEventsRequest, metadata?: Metadata): Promise<ListEventsResponse>;
+  GetEventDetail(request: GetEventDetailRequest, metadata?: Metadata): Promise<GetEventDetailResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

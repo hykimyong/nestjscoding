@@ -9,59 +9,38 @@ import {
   UseGuards,
   Get,
   Request,
+  OnModuleInit,
+  Query,
+  Param,
 } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { lastValueFrom, from } from 'rxjs';
-
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { Role } from './enums/role.enum';
-
-interface AuthService {
-  validateUser(data: {
-    token: string;
-  }): Promise<{ valid: boolean; userId: string }>;
-  login(data: {
-    username: string;
-    password: string;
-  }): Promise<{ accessToken: string }>;
-  register(data: { username: string; password: string }): Promise<{
-    success: boolean;
-    message: string;
-    user: { id: string; username: string };
-  }>;
-}
-
-interface EventService {
-  createEvent(data: {
-    title: string;
-    description: string;
-    userId: string;
-  }): Promise<any>;
-  createAttendanceEvent(data: {
-    title: string;
-    description: string;
-    startDate: string;
-    endDate: string;
-    userId: string;
-  }): Promise<any>;
-  getAttendanceEvents(data: { userId: string }): Promise<any>;
-}
+import { AuthService, RegisterResponse } from './proto/auth';
+import {
+  EventService,
+  Event,
+  CreateAttendanceEventResponse,
+} from './proto/event';
 
 @ApiTags('auth')
 @Controller()
-export class GatewayController {
+export class GatewayController implements OnModuleInit {
   private readonly logger = new Logger(GatewayController.name);
   private authService: AuthService;
   private eventService: EventService;
 
   constructor(
     @Inject('AUTH_PACKAGE') private authClient: ClientGrpc,
-    @Inject('EVENT_PACKAGE') private eventClient: ClientGrpc,
-  ) {
+    @Inject('EVENT_PACKAGE') private readonly eventClient: ClientGrpc,
+  ) {}
+
+  onModuleInit() {
     this.authService = this.authClient.getService<AuthService>('AuthService');
     this.eventService =
       this.eventClient.getService<EventService>('EventService');
@@ -71,11 +50,11 @@ export class GatewayController {
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  async register(@Body() registerDto: LoginDto) {
+  async register(@Body() registerDto: LoginDto): Promise<RegisterResponse> {
     try {
       console.log('Attempting to register user:', registerDto.username);
       const response = await lastValueFrom(
-        from(this.authService.register(registerDto)),
+        from(this.authService.Register(registerDto)),
       );
       console.log('Auth service response:', response);
 
@@ -85,6 +64,7 @@ export class GatewayController {
       }
 
       return {
+        success: response.success,
         message: response.message,
         user: response.user,
       };
@@ -109,7 +89,7 @@ export class GatewayController {
     try {
       console.log('Attempting login for user:', loginDto.username);
       const response = await lastValueFrom(
-        from(this.authService.login(loginDto)),
+        from(this.authService.Login(loginDto)),
       );
       console.log('Auth service response:', response);
 
@@ -166,20 +146,11 @@ export class GatewayController {
   @ApiResponse({ status: 201, description: 'Event successfully created.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async createEvent(
-    @Body() data: { title: string; description: string },
-    @Request() req,
-  ) {
+    @Body() body: { title: string; description: string; userId: string },
+  ): Promise<Event> {
     try {
-      this.logger.debug(`Creating event with title: ${data.title}`);
-      return lastValueFrom(
-        from(
-          this.eventService.createEvent({
-            title: data.title,
-            description: data.description,
-            userId: req.user.userId,
-          }),
-        ),
-      );
+      this.logger.debug(`Creating event: ${body.title}`);
+      return await lastValueFrom(from(this.eventService.CreateEvent(body)));
     } catch (error) {
       this.logger.error(`Event creation failed: ${error.message}`);
       throw new HttpException(
@@ -223,24 +194,23 @@ export class GatewayController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async createAttendanceEvent(
     @Body()
-    data: {
+    body: {
       title: string;
       description: string;
       startDate: string;
       endDate: string;
+      userId: string;
+      isActive: boolean;
+      requiredDays: number;
     },
-    @Request() req,
-  ) {
+  ): Promise<CreateAttendanceEventResponse> {
     try {
-      this.logger.debug(`Creating attendance event with title: ${data.title}`);
-      return lastValueFrom(
-        from(
-          this.eventService.createAttendanceEvent({
-            ...data,
-            userId: req.user.userId,
-          }),
-        ),
+      this.logger.debug(`Creating attendance event: ${body.title}`);
+      const response = await lastValueFrom(
+        from(this.eventService.CreateAttendanceEvent(body)),
       );
+
+      return response;
     } catch (error) {
       this.logger.error(`Attendance event creation failed: ${error.message}`);
       throw new HttpException(
@@ -250,29 +220,58 @@ export class GatewayController {
     }
   }
 
-  @Get('events/attendance')
+  @Get('events')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OPERATOR, Role.ADMIN)
-  @ApiOperation({ summary: 'Get all attendance events' })
-  @ApiResponse({
-    status: 200,
-    description: 'Attendance events retrieved successfully.',
-  })
+  @ApiOperation({ summary: 'List all events with pagination' })
+  @ApiResponse({ status: 200, description: 'Events retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async getAttendanceEvents(@Request() req) {
+  async listEvents(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') searchKeyword?: string,
+  ) {
     try {
-      this.logger.debug(
-        `Getting attendance events for user: ${req.user.userId}`,
-      );
-      return lastValueFrom(
-        from(
-          this.eventService.getAttendanceEvents({
-            userId: req.user.userId,
-          }),
-        ),
+      this.logger.debug(`Listing events, page: ${page}, limit: ${limit}`);
+      return await lastValueFrom(
+        from(this.eventService.ListEvents({ page, limit, searchKeyword })),
       );
     } catch (error) {
-      this.logger.error(`Failed to get attendance events: ${error.message}`);
+      this.logger.error(`Failed to list events: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('events/:eventId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OPERATOR, Role.ADMIN)
+  @ApiOperation({ summary: 'Get event details' })
+  @ApiResponse({
+    status: 200,
+    description: 'Event details retrieved successfully.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Event not found.' })
+  async getEventDetail(@Param('eventId') eventId: string) {
+    try {
+      this.logger.debug(`Getting event detail for: ${eventId}`);
+      const response = await lastValueFrom(
+        from(this.eventService.GetEventDetail({ eventId })),
+      );
+
+      if (!response.success) {
+        throw new HttpException(
+          response.message || 'Event not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return response;
+    } catch (error) {
+      this.logger.error(`Failed to get event detail: ${error.message}`);
       throw new HttpException(
         error.message || 'Internal server error',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
