@@ -32,6 +32,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
           url: process.env.EVENT_SERVICE_URL || 'localhost:50152',
         },
       },
+      {
+        name: 'REWARD_PACKAGE',
+        transport: Transport.GRPC,
+        options: {
+          package: 'reward',
+          protoPath: join(__dirname, '../dist/proto/reward.proto'),
+          url: process.env.REWARD_SERVICE_URL || 'localhost:50152',
+        },
+      },
     ]),
     JwtModule.register({
       secret: 'your-secret-key',

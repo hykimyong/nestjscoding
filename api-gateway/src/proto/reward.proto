@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package reward;
+
+service RewardService {
+  rpc CreateReward (CreateRewardRequest) returns (CreateRewardResponse);
+  rpc GetEventRewards (GetEventRewardsRequest) returns (GetEventRewardsResponse);
+  rpc GetUserRewardStatus (GetUserRewardStatusRequest) returns (GetUserRewardStatusResponse);
+  rpc RequestReward (RequestRewardRequest) returns (RequestRewardResponse);
+}
+
+message Reward {
+  string id = 1;
+  string eventId = 2;           // FK: 이벤트 ID
+  string title = 3;             // 보상 제목
+  string description = 4;       // 보상 설명
+  int32 requiredAttendance = 5; // 필요한 출석 횟수
+  string rewardType = 6;        // 보상 유형 (예: POINT, ITEM, BADGE 등)
+  string rewardValue = 7;       // 보상 값 (포인트 수량, 아이템 ID 등)
+  bool isActive = 8;            // 보상 활성화 상태
+  string createdAt = 9;         // 생성 일시
+  string updatedAt = 10;        // 수정 일시
+}
+
+message CreateRewardRequest {
+  string eventId = 1;
+  string title = 2;
+  string description = 3;
+  int32 requiredAttendance = 4;
+  string rewardType = 5;
+  string rewardValue = 6;
+  bool isActive = 7;
+}
+
+message CreateRewardResponse {
+  bool success = 1;
+  string message = 2;
+  Reward reward = 3;
+}
+
+message GetEventRewardsRequest {
+  string eventId = 1;
+}
+
+message GetEventRewardsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated Reward rewards = 3;
+}
+
+message UserRewardStatus {
+  string userId = 1;
+  string eventId = 2;
+  string rewardId = 3;
+  int32 currentAttendance = 4;  // 현재 출석 횟수
+  bool isEligible = 5;          // 보상 수령 가능 여부
+  bool isClaimed = 6;           // 보상 수령 여부
+  string claimedAt = 7;         // 보상 수령 일시
+}
+
+message GetUserRewardStatusRequest {
+  string userId = 1;
+  string eventId = 2;
+}
+
+message GetUserRewardStatusResponse {
+  bool success = 1;
+  string message = 2;
+  repeated UserRewardStatus statuses = 3;
+}
+
+message RequestRewardRequest {
+  string userId = 1;
+  string eventId = 2;
+  string rewardId = 3;
+}
+
+message RequestRewardResponse {
+  bool success = 1;
+  string message = 2;
+  UserRewardStatus status = 3;
+} 

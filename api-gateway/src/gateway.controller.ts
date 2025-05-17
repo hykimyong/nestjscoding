@@ -27,6 +27,13 @@ import {
   Event,
   CreateAttendanceEventResponse,
 } from './proto/event';
+import {
+  RewardService,
+  CreateRewardResponse,
+  GetEventRewardsResponse,
+  GetUserRewardStatusResponse,
+  RequestRewardResponse,
+} from './proto/reward';
 
 @ApiTags('auth')
 @Controller()
@@ -34,16 +41,20 @@ export class GatewayController implements OnModuleInit {
   private readonly logger = new Logger(GatewayController.name);
   private authService: AuthService;
   private eventService: EventService;
+  private rewardService: RewardService;
 
   constructor(
     @Inject('AUTH_PACKAGE') private authClient: ClientGrpc,
     @Inject('EVENT_PACKAGE') private readonly eventClient: ClientGrpc,
+    @Inject('REWARD_PACKAGE') private readonly rewardClient: ClientGrpc,
   ) {}
 
   onModuleInit() {
     this.authService = this.authClient.getService<AuthService>('AuthService');
     this.eventService =
       this.eventClient.getService<EventService>('EventService');
+    this.rewardService =
+      this.rewardClient.getService<RewardService>('RewardService');
   }
 
   @Post('auth/register')
@@ -118,20 +129,32 @@ export class GatewayController implements OnModuleInit {
   }
 
   @Post('rewards/request')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.USER)
-  @ApiOperation({ summary: 'Request a reward' })
-  @ApiResponse({ status: 201, description: 'Reward request successful.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async requestReward(@Body() data: { eventId: string }, @Request() req) {
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '보상 요청' })
+  @ApiResponse({ status: 200, description: '보상 요청 성공' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async requestReward(
+    @Request() req,
+    @Body() body: { eventId: string; rewardId: string },
+  ) {
     try {
       this.logger.debug(
-        `User ${req.user.userId} requesting reward for event ${data.eventId}`,
+        'Request user info:',
+        JSON.stringify(req.user, null, 2),
       );
-      // TODO: Implement reward request logic
-      return { message: 'Reward request submitted successfully' };
+      const userId = req.user.userId;
+      this.logger.debug(`Requesting reward for user: ${userId}`);
+      return await lastValueFrom(
+        from(
+          this.rewardService.RequestReward({
+            userId,
+            eventId: body.eventId,
+            rewardId: body.rewardId,
+          }),
+        ),
+      );
     } catch (error) {
-      this.logger.error(`Reward request failed: ${error.message}`);
+      this.logger.error(`Failed to request reward: ${error.message}`);
       throw new HttpException(
         error.message || 'Internal server error',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
@@ -272,6 +295,80 @@ export class GatewayController implements OnModuleInit {
       return response;
     } catch (error) {
       this.logger.error(`Failed to get event detail: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('rewards')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OPERATOR, Role.ADMIN)
+  @ApiOperation({ summary: '이벤트 보상 생성' })
+  @ApiResponse({
+    status: 201,
+    description: '보상이 성공적으로 생성되었습니다.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async createReward(
+    @Body()
+    body: {
+      eventId: string;
+      title: string;
+      description: string;
+      requiredAttendance: number;
+      rewardType: string;
+      rewardValue: string;
+      isActive: boolean;
+    },
+  ): Promise<CreateRewardResponse> {
+    try {
+      this.logger.debug(`Creating reward for event: ${body.eventId}`);
+      return await lastValueFrom(from(this.rewardService.CreateReward(body)));
+    } catch (error) {
+      this.logger.error(`Failed to create reward: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('rewards/event/:eventId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '이벤트의 보상 목록 조회' })
+  @ApiResponse({ status: 200, description: '보상 목록 조회 성공' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getEventRewards(@Param('eventId') eventId: string) {
+    try {
+      return await lastValueFrom(
+        from(this.rewardService.GetEventRewards({ eventId })),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to get event rewards: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('rewards/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '사용자의 보상 상태 조회' })
+  @ApiResponse({ status: 200, description: '보상 상태 조회 성공' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getUserRewardStatus(
+    @Query('userId') userId: string,
+    @Query('eventId') eventId: string,
+  ) {
+    try {
+      return await lastValueFrom(
+        from(this.rewardService.GetUserRewardStatus({ userId, eventId })),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to get user reward status: ${error.message}`);
       throw new HttpException(
         error.message || 'Internal server error',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,

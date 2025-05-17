@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppService } from './app.service';
 import { EventModule } from './event/event.module';
+import { RewardModule } from './reward/reward.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { EventModule } from './event/event.module';
       process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance',
     ),
     EventModule,
+    RewardModule,
   ],
   controllers: [],
   providers: [AppService],

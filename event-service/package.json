@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "proto:build": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt=addGrpcMetadata=true --ts_proto_out=./ src/proto/event.proto --ts_proto_opt=outputEncodeMethods=true,outputJsonMethods=false,outputClientImpl=false"
+    "proto:build": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt=addGrpcMetadata=true --ts_proto_out=./ src/proto/event.proto src/proto/reward.proto --ts_proto_opt=outputEncodeMethods=true,outputJsonMethods=false,outputClientImpl=false"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.13.3",
