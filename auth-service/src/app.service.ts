@@ -13,13 +13,21 @@ export class AppService {
 
   async login(data: { username: string; password: string }) {
     this.logger.debug(`Login attempt for user: ${data.username}`);
-    this.logger.debug('Generating JWT token...');
 
-    // 임시로 모든 로그인을 허용하고 JWT 토큰을 발급
+    // 사용자별 역할 설정
+    let roles = ['USER'];
+    if (data.username.includes('operator')) {
+      roles = ['OPERATOR'];
+    } else if (data.username.includes('auditor')) {
+      roles = ['AUDITOR'];
+    } else if (data.username.includes('admin')) {
+      roles = ['ADMIN'];
+    }
+
     const payload = {
       username: data.username,
       sub: '1',
-      roles: ['user'],
+      roles: roles,
     };
 
     const token = this.jwtService.sign(payload);

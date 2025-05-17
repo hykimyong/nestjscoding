@@ -7,6 +7,7 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Get,
   Request,
 } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
@@ -17,6 +18,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
+import { Role } from './enums/role.enum';
 
 interface AuthService {
   validateUser(data: {
@@ -39,6 +41,14 @@ interface EventService {
     description: string;
     userId: string;
   }): Promise<any>;
+  createAttendanceEvent(data: {
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    userId: string;
+  }): Promise<any>;
+  getAttendanceEvents(data: { userId: string }): Promise<any>;
 }
 
 @ApiTags('auth')
@@ -127,12 +137,33 @@ export class GatewayController {
     }
   }
 
+  @Post('rewards/request')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER)
+  @ApiOperation({ summary: 'Request a reward' })
+  @ApiResponse({ status: 201, description: 'Reward request successful.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async requestReward(@Body() data: { eventId: string }, @Request() req) {
+    try {
+      this.logger.debug(
+        `User ${req.user.userId} requesting reward for event ${data.eventId}`,
+      );
+      // TODO: Implement reward request logic
+      return { message: 'Reward request submitted successfully' };
+    } catch (error) {
+      this.logger.error(`Reward request failed: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('events')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('user')
+  @Roles(Role.OPERATOR, Role.ADMIN)
   @ApiOperation({ summary: 'Create a new event' })
   @ApiResponse({ status: 201, description: 'Event successfully created.' })
-  @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async createEvent(
     @Body() data: { title: string; description: string },
@@ -151,6 +182,97 @@ export class GatewayController {
       );
     } catch (error) {
       this.logger.error(`Event creation failed: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('rewards/history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.AUDITOR, Role.ADMIN)
+  @ApiOperation({ summary: 'Get reward history' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reward history retrieved successfully.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async getRewardHistory(@Request() req) {
+    try {
+      this.logger.debug(`User ${req.user.userId} requesting reward history`);
+      // TODO: Implement reward history retrieval logic
+      return { message: 'Reward history retrieved successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to get reward history: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('events/attendance')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OPERATOR, Role.ADMIN)
+  @ApiOperation({ summary: 'Create a new attendance event' })
+  @ApiResponse({
+    status: 201,
+    description: 'Attendance event successfully created.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async createAttendanceEvent(
+    @Body()
+    data: {
+      title: string;
+      description: string;
+      startDate: string;
+      endDate: string;
+    },
+    @Request() req,
+  ) {
+    try {
+      this.logger.debug(`Creating attendance event with title: ${data.title}`);
+      return lastValueFrom(
+        from(
+          this.eventService.createAttendanceEvent({
+            ...data,
+            userId: req.user.userId,
+          }),
+        ),
+      );
+    } catch (error) {
+      this.logger.error(`Attendance event creation failed: ${error.message}`);
+      throw new HttpException(
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('events/attendance')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OPERATOR, Role.ADMIN)
+  @ApiOperation({ summary: 'Get all attendance events' })
+  @ApiResponse({
+    status: 200,
+    description: 'Attendance events retrieved successfully.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async getAttendanceEvents(@Request() req) {
+    try {
+      this.logger.debug(
+        `Getting attendance events for user: ${req.user.userId}`,
+      );
+      return lastValueFrom(
+        from(
+          this.eventService.getAttendanceEvents({
+            userId: req.user.userId,
+          }),
+        ),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to get attendance events: ${error.message}`);
       throw new HttpException(
         error.message || 'Internal server error',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
