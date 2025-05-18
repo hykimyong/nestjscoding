@@ -10,6 +10,19 @@ import { Metadata } from "@grpc/grpc-js";
 
 export const protobufPackage = "event";
 
+export interface Reward {
+  id: string;
+  eventId: string;
+  title: string;
+  description: string;
+  requiredAttendance: number;
+  rewardType: string;
+  rewardValue: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateEventRequest {
   title: string;
   description: string;
@@ -76,7 +89,173 @@ export interface GetEventDetailResponse {
   success: boolean;
   message: string;
   event: AttendanceEvent | undefined;
+  rewards: Reward[];
 }
+
+function createBaseReward(): Reward {
+  return {
+    id: "",
+    eventId: "",
+    title: "",
+    description: "",
+    requiredAttendance: 0,
+    rewardType: "",
+    rewardValue: "",
+    isActive: false,
+    createdAt: "",
+    updatedAt: "",
+  };
+}
+
+export const Reward: MessageFns<Reward> = {
+  encode(message: Reward, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.eventId !== "") {
+      writer.uint32(18).string(message.eventId);
+    }
+    if (message.title !== "") {
+      writer.uint32(26).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(34).string(message.description);
+    }
+    if (message.requiredAttendance !== 0) {
+      writer.uint32(40).int32(message.requiredAttendance);
+    }
+    if (message.rewardType !== "") {
+      writer.uint32(50).string(message.rewardType);
+    }
+    if (message.rewardValue !== "") {
+      writer.uint32(58).string(message.rewardValue);
+    }
+    if (message.isActive !== false) {
+      writer.uint32(64).bool(message.isActive);
+    }
+    if (message.createdAt !== "") {
+      writer.uint32(74).string(message.createdAt);
+    }
+    if (message.updatedAt !== "") {
+      writer.uint32(82).string(message.updatedAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Reward {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReward();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.eventId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.requiredAttendance = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.rewardType = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.rewardValue = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.createdAt = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.updatedAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<Reward>, I>>(base?: I): Reward {
+    return Reward.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Reward>, I>>(object: I): Reward {
+    const message = createBaseReward();
+    message.id = object.id ?? "";
+    message.eventId = object.eventId ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.requiredAttendance = object.requiredAttendance ?? 0;
+    message.rewardType = object.rewardType ?? "";
+    message.rewardValue = object.rewardValue ?? "";
+    message.isActive = object.isActive ?? false;
+    message.createdAt = object.createdAt ?? "";
+    message.updatedAt = object.updatedAt ?? "";
+    return message;
+  },
+};
 
 function createBaseCreateEventRequest(): CreateEventRequest {
   return { title: "", description: "", userId: "" };
@@ -822,7 +1001,7 @@ export const GetEventDetailRequest: MessageFns<GetEventDetailRequest> = {
 };
 
 function createBaseGetEventDetailResponse(): GetEventDetailResponse {
-  return { success: false, message: "", event: undefined };
+  return { success: false, message: "", event: undefined, rewards: [] };
 }
 
 export const GetEventDetailResponse: MessageFns<GetEventDetailResponse> = {
@@ -835,6 +1014,9 @@ export const GetEventDetailResponse: MessageFns<GetEventDetailResponse> = {
     }
     if (message.event !== undefined) {
       AttendanceEvent.encode(message.event, writer.uint32(26).fork()).join();
+    }
+    for (const v of message.rewards) {
+      Reward.encode(v!, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -870,6 +1052,14 @@ export const GetEventDetailResponse: MessageFns<GetEventDetailResponse> = {
           message.event = AttendanceEvent.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.rewards.push(Reward.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -889,6 +1079,7 @@ export const GetEventDetailResponse: MessageFns<GetEventDetailResponse> = {
     message.event = (object.event !== undefined && object.event !== null)
       ? AttendanceEvent.fromPartial(object.event)
       : undefined;
+    message.rewards = object.rewards?.map((e) => Reward.fromPartial(e)) || [];
     return message;
   },
 };

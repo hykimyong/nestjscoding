@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Event, EventDocument } from '../schemas/event.schema';
+import { RewardService } from '../reward/reward.service';
 
 @Injectable()
 export class EventService {
   constructor(
     @InjectModel(Event.name)
     private eventModel: Model<EventDocument>,
+    private readonly rewardService: RewardService,
   ) {}
 
   async createEvent(data: {
@@ -17,7 +19,6 @@ export class EventService {
   }): Promise<Event> {
     const event = new this.eventModel({
       ...data,
-      userId: new Types.ObjectId(data.userId),
       startDate: new Date(),
       endDate: new Date(),
       requiredDays: 1,
@@ -37,7 +38,6 @@ export class EventService {
     try {
       const event = new this.eventModel({
         ...data,
-        userId: new Types.ObjectId(data.userId),
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
       });
@@ -116,6 +116,7 @@ export class EventService {
     success: boolean;
     message: string;
     event: Event;
+    rewards: any[];
   }> {
     try {
       const event = await this.eventModel
@@ -126,16 +127,24 @@ export class EventService {
         throw new NotFoundException('이벤트를 찾을 수 없습니다.');
       }
 
+      // 이벤트에 연결된 보상 정보 조회
+      const rewardsResponse = await this.rewardService.getEventRewards(
+        data.eventId,
+      );
+      const rewards = rewardsResponse.success ? rewardsResponse.rewards : [];
+
       return {
         success: true,
         message: '이벤트 상세 정보를 성공적으로 조회했습니다.',
         event,
+        rewards,
       };
     } catch (error) {
       return {
         success: false,
         message: '이벤트 상세 정보 조회에 실패했습니다: ' + error.message,
         event: null,
+        rewards: [],
       };
     }
   }

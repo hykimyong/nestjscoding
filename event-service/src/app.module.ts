@@ -1,20 +1,21 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { EventController } from './event.controller';
+import { EventService } from './event/event.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AppService } from './app.service';
-import { EventModule } from './event/event.module';
+import { Event, EventSchema } from './schemas/event.schema';
+import { ConfigModule } from '@nestjs/config';
 import { RewardModule } from './reward/reward.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     MongooseModule.forRoot(
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/attendance',
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/event-service',
     ),
-    EventModule,
+    MongooseModule.forFeature([{ name: Event.name, schema: EventSchema }]),
     RewardModule,
   ],
-  controllers: [],
-  providers: [AppService],
+  controllers: [EventController],
+  providers: [EventService],
 })
 export class AppModule {}

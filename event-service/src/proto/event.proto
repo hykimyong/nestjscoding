@@ -2,6 +2,19 @@ syntax = "proto3";
 
 package event;
 
+message Reward {
+  string id = 1;
+  string eventId = 2;           
+  string title = 3;             
+  string description = 4;       
+  int32 requiredAttendance = 5; 
+  string rewardType = 6;        
+  string rewardValue = 7;       
+  bool isActive = 8;            
+  string createdAt = 9;         
+  string updatedAt = 10;        
+}
+
 service EventService {
   rpc CreateEvent (CreateEventRequest) returns (Event);
   rpc CreateAttendanceEvent (CreateAttendanceEventRequest) returns (CreateAttendanceEventResponse);
@@ -75,4 +88,5 @@ message GetEventDetailResponse {
   bool success = 1;
   string message = 2;
   AttendanceEvent event = 3;
+  repeated Reward rewards = 4;
 } 

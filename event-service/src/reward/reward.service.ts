@@ -12,6 +12,7 @@ import {
   UserRewardStatus,
   UserRewardStatusDocument,
 } from '../schemas/reward.schema';
+import { Event, EventDocument } from '../schemas/event.schema';
 
 @Injectable()
 export class RewardService {
@@ -22,6 +23,8 @@ export class RewardService {
     private rewardModel: Model<RewardDocument>,
     @InjectModel(UserRewardStatus.name)
     private userRewardStatusModel: Model<UserRewardStatusDocument>,
+    @InjectModel(Event.name)
+    private eventModel: Model<EventDocument>,
   ) {}
 
   async createReward(data: {
@@ -117,23 +120,52 @@ export class RewardService {
     statuses: UserRewardStatus[];
   }> {
     try {
-      const userObjectId = this.toObjectId(userId, 'userId');
-      const eventObjectId = this.toObjectId(eventId, 'eventId');
+      let query = {};
 
-      const rewards = await this.rewardModel
-        .find({ eventId: eventObjectId })
+      // userId가 있는 경우 해당 사용자의 보상 상태만 조회
+      if (userId) {
+        const userObjectId = this.toObjectId(userId, 'userId');
+        query['userId'] = userObjectId;
+      }
+
+      // eventId가 있는 경우 해당 이벤트의 보상 상태만 조회
+      if (eventId) {
+        const eventObjectId = this.toObjectId(eventId, 'eventId');
+
+        // 이벤트 존재 여부 확인
+        const eventExists = await this.eventModel.exists({
+          _id: eventObjectId,
+        });
+        if (!eventExists) {
+          return {
+            success: false,
+            message: '존재하지 않는 이벤트입니다.',
+            statuses: [],
+          };
+        }
+
+        query['eventId'] = eventObjectId;
+      }
+
+      // 보상 상태 조회
+      const statuses = await this.userRewardStatusModel
+        .find(query)
+        .populate('rewardId')
         .exec();
 
-      const statuses = await Promise.all(
-        rewards.map(async (reward) => {
-          let status = await this.userRewardStatusModel.findOne({
-            userId: userObjectId,
-            eventId: eventObjectId,
-            rewardId: reward._id,
-          });
+      // 조회된 결과가 없는 경우
+      if (statuses.length === 0 && userId && eventId) {
+        // 특정 사용자와 이벤트에 대한 조회인 경우, 해당 이벤트의 모든 보상에 대한 상태 생성
+        const eventObjectId = this.toObjectId(eventId, 'eventId');
+        const userObjectId = this.toObjectId(userId, 'userId');
 
-          if (!status) {
-            status = new this.userRewardStatusModel({
+        const rewards = await this.rewardModel
+          .find({ eventId: eventObjectId })
+          .exec();
+
+        const newStatuses = await Promise.all(
+          rewards.map(async (reward) => {
+            const status = new this.userRewardStatusModel({
               userId: userObjectId,
               eventId: eventObjectId,
               rewardId: reward._id,
@@ -142,11 +174,16 @@ export class RewardService {
               isClaimed: false,
             });
             await status.save();
-          }
+            return status;
+          }),
+        );
 
-          return status;
-        }),
-      );
+        return {
+          success: true,
+          message: '새로운 보상 상태가 생성되었습니다.',
+          statuses: newStatuses,
+        };
+      }
 
       return {
         success: true,
@@ -177,13 +214,21 @@ export class RewardService {
     return Types.ObjectId.isValid(id);
   }
 
-  private toObjectId(id: string | number, field: string): Types.ObjectId {
-    // 숫자형 ID인 경우 문자열로 변환하여 처리
-    const stringId = id.toString().padStart(24, '0');
-    if (!Types.ObjectId.isValid(stringId)) {
-      throw new BadRequestException(`유효하지 않은 ${field} 형식입니다.`);
+  private toObjectId(id: string, fieldName: string): Types.ObjectId {
+    if (!id) {
+      throw new BadRequestException(`${fieldName}가 제공되지 않았습니다.`);
     }
-    return new Types.ObjectId(stringId);
+
+    // userId는 ObjectId가 아닌 일반 문자열이므로 검증하지 않음
+    if (fieldName === 'userId') {
+      return id as any;
+    }
+
+    if (!this.isValidObjectId(id)) {
+      throw new BadRequestException(`유효하지 않은 ${fieldName} 형식입니다.`);
+    }
+
+    return new Types.ObjectId(id);
   }
 
   async requestReward(

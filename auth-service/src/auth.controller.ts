@@ -1,30 +1,25 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import { AppService } from './app.service';
+import { AuthService } from './auth.service';
 
 @Controller()
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Get()
   getHello(): string {
-    return this.appService.getHello();
+    return this.authService.getHello();
   }
 
   @GrpcMethod('AuthService', 'Login')
-  async login(data: { username: string; password: string }) {
-    return this.appService.login(data);
-  }
-
-  @GrpcMethod('AuthService', 'ValidateUser')
-  async validateUser(data: { token: string }) {
-    return this.appService.validateUser(data);
+  async login(data: { userId: string; password: string }) {
+    return this.authService.login(data);
   }
 
   @GrpcMethod('AuthService', 'Register')
-  async register(data: { username: string; password: string }) {
-    return this.appService.register(data);
+  async register(data: { userId: string; password: string }) {
+    return this.authService.register(data);
   }
 }

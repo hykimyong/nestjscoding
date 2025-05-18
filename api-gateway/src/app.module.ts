@@ -1,54 +1,65 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { join } from 'path';
-import { GatewayController } from './gateway.controller';
-import { AppService } from './app.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { AuthController } from './controllers/auth.controller';
+import { EventController } from './controllers/event.controller';
+import { RewardController } from './controllers/reward.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       {
         name: 'AUTH_PACKAGE',
-        transport: Transport.GRPC,
-        options: {
-          package: 'auth',
-          protoPath: join(__dirname, '../dist/proto/auth.proto'),
-          url: process.env.AUTH_SERVICE_URL || 'localhost:50151',
-        },
+        useFactory: () => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'auth',
+            protoPath: join(__dirname, 'proto/auth.proto'),
+            url: 'localhost:50151',
+          },
+        }),
       },
       {
         name: 'EVENT_PACKAGE',
-        transport: Transport.GRPC,
-        options: {
-          package: 'event',
-          protoPath: join(__dirname, '../dist/proto/event.proto'),
-          url: process.env.EVENT_SERVICE_URL || 'localhost:50152',
-        },
+        useFactory: () => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'event',
+            protoPath: join(__dirname, 'proto/event.proto'),
+            url: 'localhost:50152',
+          },
+        }),
       },
       {
         name: 'REWARD_PACKAGE',
-        transport: Transport.GRPC,
-        options: {
-          package: 'reward',
-          protoPath: join(__dirname, '../dist/proto/reward.proto'),
-          url: process.env.REWARD_SERVICE_URL || 'localhost:50152',
-        },
+        useFactory: () => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'reward',
+            protoPath: join(__dirname, 'proto/reward.proto'),
+            url: 'localhost:50152',
+          },
+        }),
       },
     ]),
-    JwtModule.register({
-      secret: 'your-secret-key',
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1h' },
+      }),
+      inject: [ConfigService],
     }),
     PassportModule,
   ],
-  controllers: [GatewayController],
-  providers: [AppService, JwtStrategy],
+  controllers: [AuthController, EventController, RewardController],
+  providers: [JwtStrategy],
 })
 export class AppModule {}

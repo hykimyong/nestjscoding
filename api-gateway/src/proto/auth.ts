@@ -20,7 +20,7 @@ export interface ValidateUserResponse {
 }
 
 export interface LoginRequest {
-  username: string;
+  userId: string;
   password: string;
 }
 
@@ -29,7 +29,7 @@ export interface LoginResponse {
 }
 
 export interface RegisterRequest {
-  username: string;
+  userId: string;
   password: string;
 }
 
@@ -41,7 +41,7 @@ export interface RegisterResponse {
 
 export interface User {
   id: string;
-  username: string;
+  userId: string;
 }
 
 function createBaseValidateUserRequest(): ValidateUserRequest {
@@ -149,13 +149,13 @@ export const ValidateUserResponse: MessageFns<ValidateUserResponse> = {
 };
 
 function createBaseLoginRequest(): LoginRequest {
-  return { username: "", password: "" };
+  return { userId: "", password: "" };
 }
 
 export const LoginRequest: MessageFns<LoginRequest> = {
   encode(message: LoginRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.username !== "") {
-      writer.uint32(10).string(message.username);
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
     }
     if (message.password !== "") {
       writer.uint32(18).string(message.password);
@@ -175,7 +175,7 @@ export const LoginRequest: MessageFns<LoginRequest> = {
             break;
           }
 
-          message.username = reader.string();
+          message.userId = reader.string();
           continue;
         }
         case 2: {
@@ -200,7 +200,7 @@ export const LoginRequest: MessageFns<LoginRequest> = {
   },
   fromPartial<I extends Exact<DeepPartial<LoginRequest>, I>>(object: I): LoginRequest {
     const message = createBaseLoginRequest();
-    message.username = object.username ?? "";
+    message.userId = object.userId ?? "";
     message.password = object.password ?? "";
     return message;
   },
@@ -253,13 +253,13 @@ export const LoginResponse: MessageFns<LoginResponse> = {
 };
 
 function createBaseRegisterRequest(): RegisterRequest {
-  return { username: "", password: "" };
+  return { userId: "", password: "" };
 }
 
 export const RegisterRequest: MessageFns<RegisterRequest> = {
   encode(message: RegisterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.username !== "") {
-      writer.uint32(10).string(message.username);
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
     }
     if (message.password !== "") {
       writer.uint32(18).string(message.password);
@@ -279,7 +279,7 @@ export const RegisterRequest: MessageFns<RegisterRequest> = {
             break;
           }
 
-          message.username = reader.string();
+          message.userId = reader.string();
           continue;
         }
         case 2: {
@@ -304,7 +304,7 @@ export const RegisterRequest: MessageFns<RegisterRequest> = {
   },
   fromPartial<I extends Exact<DeepPartial<RegisterRequest>, I>>(object: I): RegisterRequest {
     const message = createBaseRegisterRequest();
-    message.username = object.username ?? "";
+    message.userId = object.userId ?? "";
     message.password = object.password ?? "";
     return message;
   },
@@ -381,7 +381,7 @@ export const RegisterResponse: MessageFns<RegisterResponse> = {
 };
 
 function createBaseUser(): User {
-  return { id: "", username: "" };
+  return { id: "", userId: "" };
 }
 
 export const User: MessageFns<User> = {
@@ -389,8 +389,8 @@ export const User: MessageFns<User> = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.username !== "") {
-      writer.uint32(18).string(message.username);
+    if (message.userId !== "") {
+      writer.uint32(18).string(message.userId);
     }
     return writer;
   },
@@ -415,7 +415,7 @@ export const User: MessageFns<User> = {
             break;
           }
 
-          message.username = reader.string();
+          message.userId = reader.string();
           continue;
         }
       }
@@ -433,7 +433,7 @@ export const User: MessageFns<User> = {
   fromPartial<I extends Exact<DeepPartial<User>, I>>(object: I): User {
     const message = createBaseUser();
     message.id = object.id ?? "";
-    message.username = object.username ?? "";
+    message.userId = object.userId ?? "";
     return message;
   },
 };
