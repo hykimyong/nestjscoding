@@ -2,18 +2,24 @@
 
 NestJS와 MongoDB 기반의 마이크로서비스 프로젝트입니다.
 
-> 이 프로젝트는 [nestjs-msa-boilerplate](https://github.com/ruccess/nestjs-msa-boilerplate)를 기반으로 개발되었습니다.
+> 이 프로젝트는 [nestjs-msa-boilerplate](https://github.com/ruccess/nestjs-msa-boilerplate)를 기반으로 mac 환경에서 개발되었습니다.
 
 ## Prerequisites
 
-- Docker Desktop ([다운로드](https://www.docker.com/products/docker-desktop))
-- Node.js 18 이상 ([다운로드](https://nodejs.org/))
+- Docker
+  - macOS:
+    - Docker Desktop ([다운로드](https://www.docker.com/products/docker-desktop)) 또는
+    - Homebrew를 통한 설치: `brew install docker docker-compose`
+  - Windows: Docker Desktop ([다운로드](https://www.docker.com/products/docker-desktop))
+- Node.js 18 ([다운로드](https://nodejs.org/))
+  - 주의: 정확히 버전 18을 사용해야 합니다. 다른 버전은 지원되지 않습니다.
 
 ## 프로젝트 실행 방법
 
-1. Docker Desktop 실행
+1. Docker 실행 확인
 
-   - Docker Desktop이 실행 중인지 확인하세요
+   - Docker Desktop 사용 시: Docker Desktop이 실행 중인지 확인
+   - Homebrew Docker 사용 시: Docker 데몬이 실행 중인지 확인 (`docker ps`로 테스트)
 
 2. 프로젝트 실행
 
@@ -284,17 +290,6 @@ API Gateway에서는 Swagger를 통해 API 문서를 제공합니다.
    - 성공/실패 응답 코드
    - 응답 데이터 구조
    - 에러 메시지 형식
-
-### 권한 (Roles)
-
-API 접근 권한은 다음과 같이 구분됩니다:
-
-- USER: 일반 사용자 권한
-- OPERATOR: 운영자 권한
-- ADMIN: 관리자 권한
-- AUDITOR: 감사자 권한
-
-각 API의 필요 권한은 Swagger UI에서 API 설명에 명시되어 있습니다.
 
 ## 추가 기능
 
