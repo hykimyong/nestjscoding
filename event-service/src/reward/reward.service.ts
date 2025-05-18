@@ -13,6 +13,7 @@ import {
   UserRewardStatusDocument,
 } from '../schemas/reward.schema';
 import { Event, EventDocument } from '../schemas/event.schema';
+import { RequestRewardDto } from '../dto/request-reward.dto';
 
 @Injectable()
 export class RewardService {
@@ -231,104 +232,35 @@ export class RewardService {
     return new Types.ObjectId(id);
   }
 
-  async requestReward(
-    userId: string,
-    eventId: string,
-    rewardId: string,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    status: UserRewardStatus;
-  }> {
+  async requestReward(data: RequestRewardDto) {
     try {
-      this.logger.debug('Request reward params:', {
-        userId,
-        eventId,
-        rewardId,
-      });
-
-      // ID 유효성 검사
-      const userObjectId = this.toObjectId(userId, 'userId');
-      const eventObjectId = this.toObjectId(eventId, 'eventId');
-      const rewardObjectId = this.toObjectId(rewardId, 'rewardId');
-
-      this.logger.debug('Converted ObjectIds:', {
-        userObjectId: userObjectId.toString(),
-        eventObjectId: eventObjectId.toString(),
-        rewardObjectId: rewardObjectId.toString(),
-      });
-
-      const reward = await this.rewardModel.findById(rewardObjectId).exec();
-      this.logger.debug('Found reward:', reward);
-
+      const reward = await this.rewardModel.findById(data.rewardId);
       if (!reward) {
-        throw new NotFoundException('보상을 찾을 수 없습니다.');
+        throw new Error('Reward not found');
       }
 
       let status = await this.userRewardStatusModel.findOne({
-        userId: userObjectId,
-        eventId: eventObjectId,
-        rewardId: rewardObjectId,
+        userId: data.userId,
+        rewardId: data.rewardId,
       });
-      this.logger.debug('Current user reward status:', status);
 
       if (!status) {
-        status = new this.userRewardStatusModel({
-          userId: userObjectId,
-          eventId: eventObjectId,
-          rewardId: rewardObjectId,
-          currentAttendance: 0,
-          isEligible: false,
-          isClaimed: false,
+        status = await this.userRewardStatusModel.create({
+          userId: data.userId,
+          rewardId: data.rewardId,
+          claimed: true,
+          claimedAt: new Date(),
         });
-        this.logger.debug('Created new user reward status:', status);
-      }
-
-      if (status.isClaimed) {
-        return {
-          success: false,
-          message: '이미 수령한 보상입니다.',
-          status,
-        };
-      }
-
-      if (status.currentAttendance >= reward.requiredAttendance) {
-        status.isEligible = true;
-        status.isClaimed = true;
+      } else {
+        status.claimed = true;
         status.claimedAt = new Date();
         await status.save();
-        this.logger.debug('Updated user reward status after claim:', status);
+      }
 
-        return {
-          success: true,
-          message: '보상이 성공적으로 지급되었습니다.',
-          status,
-        };
-      } else {
-        return {
-          success: false,
-          message: `출석 횟수가 부족합니다. (현재: ${status.currentAttendance}, 필요: ${reward.requiredAttendance})`,
-          status,
-        };
-      }
+      return status;
     } catch (error) {
-      this.logger.error('Error in requestReward:', error.message, error.stack);
-      if (error instanceof BadRequestException) {
-        return {
-          success: false,
-          message: error.message,
-          status: null,
-        };
-      }
-      this.logger.error(
-        `보상 요청 처리 중 오류 발생: ${error.message}`,
-        error.stack,
-      );
-      return {
-        success: false,
-        message: '보상 요청 처리 중 오류가 발생했습니다.',
-        status: null,
-      };
+      this.logger.error(`Failed to request reward: ${error.message}`);
+      throw error;
     }
   }
 

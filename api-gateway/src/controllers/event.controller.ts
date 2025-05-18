@@ -58,7 +58,6 @@ export class EventController {
   })
   async createEvent(@Body() createEventDto: CreateEventDto): Promise<Event> {
     try {
-      this.logger.debug(`Creating event: ${createEventDto.title}`);
       return await lastValueFrom(
         from(this.eventService.CreateEvent(createEventDto)),
       );

@@ -1,21 +1,27 @@
 import { Controller, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { EventService } from './event/event.service';
+import { CreateEventDto } from './event/dto/create-event.dto';
+import { Event } from './event/entities/event.entity';
+import { RewardService } from './reward/reward.service';
 
 @Controller()
 export class EventController {
   private readonly logger = new Logger(EventController.name);
 
-  constructor(private readonly eventService: EventService) {}
+  constructor(
+    private readonly eventService: EventService,
+    private readonly rewardService: RewardService,
+  ) {}
 
-  @GrpcMethod('EventService', 'CreateEvent')
-  async createEvent(data: {
-    title: string;
-    description: string;
-    userId: string;
-  }) {
-    this.logger.debug(`Creating event: ${data.title}`);
-    return this.eventService.createEvent(data);
+  @GrpcMethod('EventService')
+  async CreateEvent(data: CreateEventDto): Promise<Event> {
+    try {
+      return await this.eventService.createEvent(data);
+    } catch (error) {
+      this.logger.error(`Failed to create event: ${error.message}`);
+      throw error;
+    }
   }
 
   @GrpcMethod('EventService', 'CreateAttendanceEvent')
@@ -28,7 +34,6 @@ export class EventController {
     isActive: boolean;
     requiredDays: number;
   }) {
-    this.logger.debug(`Creating attendance event: ${data.title}`);
     return this.eventService.createAttendanceEvent(data);
   }
 
@@ -39,9 +44,6 @@ export class EventController {
     searchKeyword?: string;
   }) {
     try {
-      this.logger.debug(
-        `Listing events, page: ${data.page}, limit: ${data.limit}`,
-      );
       return await this.eventService.listEvents(data);
     } catch (error) {
       this.logger.error(`Failed to list events: ${error.message}`);
@@ -59,7 +61,6 @@ export class EventController {
   @GrpcMethod('EventService', 'GetEventDetail')
   async getEventDetail(data: { eventId: string }) {
     try {
-      this.logger.debug(`Getting event detail for: ${data.eventId}`);
       return await this.eventService.getEventDetail(data);
     } catch (error) {
       this.logger.error(`Failed to get event detail: ${error.message}`);
@@ -81,7 +82,20 @@ export class EventController {
     isActive?: boolean;
     requiredDays?: number;
   }) {
-    this.logger.debug(`Updating event: ${data.eventId}`);
     return this.eventService.updateEvent(data);
+  }
+
+  @GrpcMethod('RewardService', 'GetRewardHistory')
+  async getRewardHistory(data: { userId: string }) {
+    try {
+      return await this.rewardService.getRewardHistory(data.userId);
+    } catch (error) {
+      this.logger.error(`Failed to get reward history: ${error.message}`);
+      return {
+        success: false,
+        message: error.message,
+        history: [],
+      };
+    }
   }
 }

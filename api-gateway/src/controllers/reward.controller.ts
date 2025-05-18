@@ -60,20 +60,9 @@ export class RewardController {
     @Body() requestRewardDto: RequestRewardDto,
   ) {
     try {
-      this.logger.debug(
-        'Request user info:',
-        JSON.stringify(req.user, null, 2),
-      );
       const userId = req.user.userId;
-      this.logger.debug(`Requesting reward for user: ${userId}`);
       return await lastValueFrom(
-        from(
-          this.rewardService.RequestReward({
-            userId,
-            eventId: requestRewardDto.eventId,
-            rewardId: requestRewardDto.rewardId,
-          }),
-        ),
+        from(this.rewardService.RequestReward({ ...requestRewardDto, userId })),
       );
     } catch (error) {
       this.logger.error(`Failed to request reward: ${error.message}`);
@@ -95,9 +84,9 @@ export class RewardController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async getRewardHistory(@Request() req) {
     try {
-      this.logger.debug(`User ${req.user.userId} requesting reward history`);
-      // TODO: Implement reward history retrieval logic
-      return { message: 'Reward history retrieved successfully' };
+      return await lastValueFrom(
+        from(this.rewardService.GetRewardHistory({ userId: req.user.userId })),
+      );
     } catch (error) {
       this.logger.error(`Failed to get reward history: ${error.message}`);
       throw new HttpException(
@@ -117,9 +106,6 @@ export class RewardController {
     @Body() createRewardDto: CreateRewardDto,
   ): Promise<CreateRewardResponse> {
     try {
-      this.logger.debug(
-        `Creating reward for event ${createRewardDto.eventId}: ${createRewardDto.title}`,
-      );
       return await lastValueFrom(
         from(this.rewardService.CreateReward(createRewardDto)),
       );
@@ -157,9 +143,6 @@ export class RewardController {
   ) {
     try {
       const userId = targetUserId || req.user.userId;
-      this.logger.debug(
-        `Getting reward status for user: ${userId}, event: ${eventId || 'all'}`,
-      );
       return await lastValueFrom(
         from(
           this.rewardService.GetUserRewardStatus({
@@ -193,9 +176,6 @@ export class RewardController {
     @Body() updateRewardDto: UpdateRewardDto,
   ) {
     try {
-      this.logger.debug(
-        `Updating reward ${rewardId}: ${JSON.stringify(updateRewardDto)}`,
-      );
       return await lastValueFrom(
         from(
           this.rewardService.UpdateReward({

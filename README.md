@@ -56,17 +56,23 @@ docker-compose up -d --build
 
 ## 권한 체계
 
-- USER: 일반 사용자
+- USER: 일반 사용자 (기본 계정: user/user1234)
+
   - 보상 요청
   - 자신의 보상 내역만 조회 가능
-- AUDITOR: 감사자
+
+- AUDITOR: 감사자 (기본 계정: auditor/auditor1234)
+
   - 모든 사용자의 보상 내역 조회 가능
   - 특정 사용자의 보상 내역 조회 가능
-- ADMIN: 관리자
+
+- ADMIN: 관리자 (기본 계정: admin/admin1234)
+
   - 모든 기능 접근 가능
   - 이벤트 및 보상 생성/관리
   - 모든 사용자의 보상 내역 조회
-- OPERATOR: 운영자
+
+- OPERATOR: 운영자 (기본 계정: operator/operator1234)
   - 이벤트 및 보상 생성/관리
   - 이벤트 상세 조회
   - 모든 사용자의 보상 내역 조회 가능

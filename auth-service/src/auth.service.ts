@@ -12,8 +12,6 @@ export class AuthService {
   }
 
   async login(data: { userId: string; password: string }) {
-    this.logger.debug(`Login attempt for user: ${data.userId}`);
-
     // 사용자별 역할 설정
     let roles = ['USER'];
     if (data.userId.includes('operator')) {
@@ -33,15 +31,12 @@ export class AuthService {
     // 실제로는 register 함수에 등록된 db를 조회해서 유효성검사를 거친 이후에 토큰을 발급해줘야함
     // 지금은 테스트를 위해 모두 로그인 되게 처리
     const token = this.jwtService.sign(payload);
-    this.logger.debug(`Generated token for user ${data.userId}: ${token}`);
 
     const response = { accessToken: token };
-    this.logger.debug(`Returning response: ${JSON.stringify(response)}`);
     return response;
   }
 
   async register(data: { userId: string; password: string }) {
-    this.logger.debug(`Register attempt for user: ${data.userId}`);
     // TODO: 실제로는 비밀번호를 해시화하고 DB에 저장해야 합니다
     // 지금은 테스트를 위해 간단히 처리
     return {
