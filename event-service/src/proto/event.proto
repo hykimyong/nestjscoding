@@ -20,6 +20,7 @@ service EventService {
   rpc CreateAttendanceEvent (CreateAttendanceEventRequest) returns (CreateAttendanceEventResponse);
   rpc ListEvents (ListEventsRequest) returns (ListEventsResponse);
   rpc GetEventDetail (GetEventDetailRequest) returns (GetEventDetailResponse);
+  rpc UpdateEvent (UpdateEventRequest) returns (UpdateEventResponse);
 }
 
 message CreateEventRequest {
@@ -89,4 +90,20 @@ message GetEventDetailResponse {
   string message = 2;
   AttendanceEvent event = 3;
   repeated Reward rewards = 4;
+}
+
+message UpdateEventRequest {
+  string eventId = 1;
+  string title = 2;
+  string description = 3;
+  string startDate = 4;
+  string endDate = 5;
+  bool isActive = 6;
+  int32 requiredDays = 7;
+}
+
+message UpdateEventResponse {
+  bool success = 1;
+  string message = 2;
+  AttendanceEvent event = 3;
 } 

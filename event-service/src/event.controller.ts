@@ -70,4 +70,18 @@ export class EventController {
       };
     }
   }
+
+  @GrpcMethod('EventService', 'UpdateEvent')
+  async updateEvent(data: {
+    eventId: string;
+    title?: string;
+    description?: string;
+    startDate?: string;
+    endDate?: string;
+    isActive?: boolean;
+    requiredDays?: number;
+  }) {
+    this.logger.debug(`Updating event: ${data.eventId}`);
+    return this.eventService.updateEvent(data);
+  }
 }

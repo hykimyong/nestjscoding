@@ -1,28 +1,38 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '../enums/role.enum';
+import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>('roles', [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     if (!requiredRoles) {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const user = request.user; // JWT strategy에서 설정된 user 객체
 
-    // ADMIN은 모든 역할에 접근 가능
-    if (user.roles?.includes(Role.ADMIN)) {
-      return true;
+    const hasRole = requiredRoles.some((role) => user?.roles?.includes(role));
+
+    if (!hasRole) {
+      throw new ForbiddenException({
+        message: 'Forbidden resource',
+        error: `해당 작업을 수행할 권한이 없습니다. 필요한 권한: ${requiredRoles.join(', ')}`,
+      });
     }
 
-    return requiredRoles.some((role) => user.roles?.includes(role));
+    return true;
   }
 }

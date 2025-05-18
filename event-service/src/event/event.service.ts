@@ -148,4 +148,52 @@ export class EventService {
       };
     }
   }
+
+  async updateEvent(data: {
+    eventId: string;
+    title?: string;
+    description?: string;
+    startDate?: string;
+    endDate?: string;
+    isActive?: boolean;
+    requiredDays?: number;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    event: Event;
+  }> {
+    try {
+      const { eventId, ...updateData } = data;
+
+      const updateFields: any = { ...updateData };
+      if (updateData.startDate) {
+        updateFields.startDate = new Date(updateData.startDate);
+      }
+      if (updateData.endDate) {
+        updateFields.endDate = new Date(updateData.endDate);
+      }
+
+      const event = await this.eventModel.findById(new Types.ObjectId(eventId));
+
+      if (!event) {
+        throw new NotFoundException('이벤트를 찾을 수 없습니다.');
+      }
+
+      // Update only the provided fields
+      Object.assign(event, updateFields);
+      await event.save();
+
+      return {
+        success: true,
+        message: '이벤트가 성공적으로 업데이트되었습니다.',
+        event,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: '이벤트 업데이트에 실패했습니다: ' + error.message,
+        event: null,
+      };
+    }
+  }
 }

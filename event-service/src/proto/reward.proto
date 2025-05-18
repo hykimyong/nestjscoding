@@ -7,6 +7,7 @@ service RewardService {
   rpc GetEventRewards (GetEventRewardsRequest) returns (GetEventRewardsResponse);
   rpc GetUserRewardStatus (GetUserRewardStatusRequest) returns (GetUserRewardStatusResponse);
   rpc RequestReward (RequestRewardRequest) returns (RequestRewardResponse);
+  rpc UpdateReward (UpdateRewardRequest) returns (UpdateRewardResponse);
 }
 
 message Reward {
@@ -79,4 +80,20 @@ message RequestRewardResponse {
   bool success = 1;
   string message = 2;
   UserRewardStatus status = 3;
+}
+
+message UpdateRewardRequest {
+  string rewardId = 1;
+  optional string title = 2;
+  optional string description = 3;
+  optional int32 requiredAttendance = 4;
+  optional string rewardType = 5;
+  optional string rewardValue = 6;
+  optional bool isActive = 7;
+}
+
+message UpdateRewardResponse {
+  bool success = 1;
+  string message = 2;
+  Reward reward = 3;
 } 

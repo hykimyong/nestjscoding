@@ -95,6 +95,22 @@ export interface RequestRewardResponse {
   status: UserRewardStatus | undefined;
 }
 
+export interface UpdateRewardRequest {
+  rewardId: string;
+  title?: string | undefined;
+  description?: string | undefined;
+  requiredAttendance?: number | undefined;
+  rewardType?: string | undefined;
+  rewardValue?: string | undefined;
+  isActive?: boolean | undefined;
+}
+
+export interface UpdateRewardResponse {
+  success: boolean;
+  message: string;
+  reward: Reward | undefined;
+}
+
 function createBaseReward(): Reward {
   return {
     id: "",
@@ -970,11 +986,210 @@ export const RequestRewardResponse: MessageFns<RequestRewardResponse> = {
   },
 };
 
+function createBaseUpdateRewardRequest(): UpdateRewardRequest {
+  return {
+    rewardId: "",
+    title: undefined,
+    description: undefined,
+    requiredAttendance: undefined,
+    rewardType: undefined,
+    rewardValue: undefined,
+    isActive: undefined,
+  };
+}
+
+export const UpdateRewardRequest: MessageFns<UpdateRewardRequest> = {
+  encode(message: UpdateRewardRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rewardId !== "") {
+      writer.uint32(10).string(message.rewardId);
+    }
+    if (message.title !== undefined) {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== undefined) {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.requiredAttendance !== undefined) {
+      writer.uint32(32).int32(message.requiredAttendance);
+    }
+    if (message.rewardType !== undefined) {
+      writer.uint32(42).string(message.rewardType);
+    }
+    if (message.rewardValue !== undefined) {
+      writer.uint32(50).string(message.rewardValue);
+    }
+    if (message.isActive !== undefined) {
+      writer.uint32(56).bool(message.isActive);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateRewardRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateRewardRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rewardId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requiredAttendance = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.rewardType = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.rewardValue = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateRewardRequest>, I>>(base?: I): UpdateRewardRequest {
+    return UpdateRewardRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateRewardRequest>, I>>(object: I): UpdateRewardRequest {
+    const message = createBaseUpdateRewardRequest();
+    message.rewardId = object.rewardId ?? "";
+    message.title = object.title ?? undefined;
+    message.description = object.description ?? undefined;
+    message.requiredAttendance = object.requiredAttendance ?? undefined;
+    message.rewardType = object.rewardType ?? undefined;
+    message.rewardValue = object.rewardValue ?? undefined;
+    message.isActive = object.isActive ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateRewardResponse(): UpdateRewardResponse {
+  return { success: false, message: "", reward: undefined };
+}
+
+export const UpdateRewardResponse: MessageFns<UpdateRewardResponse> = {
+  encode(message: UpdateRewardResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.reward !== undefined) {
+      Reward.encode(message.reward, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateRewardResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateRewardResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reward = Reward.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateRewardResponse>, I>>(base?: I): UpdateRewardResponse {
+    return UpdateRewardResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateRewardResponse>, I>>(object: I): UpdateRewardResponse {
+    const message = createBaseUpdateRewardResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.reward = (object.reward !== undefined && object.reward !== null)
+      ? Reward.fromPartial(object.reward)
+      : undefined;
+    return message;
+  },
+};
+
 export interface RewardService {
   CreateReward(request: CreateRewardRequest, metadata?: Metadata): Promise<CreateRewardResponse>;
   GetEventRewards(request: GetEventRewardsRequest, metadata?: Metadata): Promise<GetEventRewardsResponse>;
   GetUserRewardStatus(request: GetUserRewardStatusRequest, metadata?: Metadata): Promise<GetUserRewardStatusResponse>;
   RequestReward(request: RequestRewardRequest, metadata?: Metadata): Promise<RequestRewardResponse>;
+  UpdateReward(request: UpdateRewardRequest, metadata?: Metadata): Promise<UpdateRewardResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

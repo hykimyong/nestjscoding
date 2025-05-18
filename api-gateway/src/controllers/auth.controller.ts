@@ -62,42 +62,39 @@ export class AuthController {
   }
 
   @Post('login')
-  @ApiOperation({ summary: 'Login user' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({ summary: '로그인' })
+  @ApiResponse({
+    status: 200,
+    description: '로그인 성공',
+    schema: {
+      type: 'object',
+      properties: {
+        access_token: {
+          type: 'string',
+          description: 'JWT 토큰',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            userId: {
+              type: 'string',
+              description: '사용자 ID',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   async login(@Body() loginDto: LoginDto) {
     try {
-      this.logger.debug('Attempting login for user:', loginDto.userId);
-      const response = await lastValueFrom(
-        from(
-          this.authService.Login({
-            userId: loginDto.userId,
-            password: loginDto.password,
-          }),
-        ),
-      );
-      this.logger.debug('Auth service response:', response);
-
-      if (!response || !response.accessToken) {
-        this.logger.error('Invalid response from auth service:', response);
-        throw new Error('Invalid response from auth service');
-      }
-
-      return {
-        access_token: response.accessToken,
-        user: {
-          userId: loginDto.userId,
-        },
-      };
+      this.logger.debug(`Login attempt for user: ${loginDto.userId}`);
+      return await lastValueFrom(from(this.authService.Login(loginDto)));
     } catch (error) {
-      this.logger.error(
-        'Login failed for user',
-        loginDto.userId + ':',
-        error.message,
-      );
+      this.logger.error(`Login failed: ${error.message}`);
       throw new HttpException(
-        'Authentication failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

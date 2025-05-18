@@ -20,7 +20,17 @@ async function bootstrap() {
     .setTitle('Event API')
     .setDescription('The Event API description')
     .setVersion('1.0')
-    .addTag('events')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'access-token',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

@@ -2,6 +2,8 @@
 
 NestJS와 MongoDB 기반의 마이크로서비스 프로젝트입니다.
 
+> 이 프로젝트는 [nestjs-msa-boilerplate](https://github.com/ruccess/nestjs-msa-boilerplate)를 기반으로 개발되었습니다.
+
 ## Prerequisites
 
 - Docker Desktop ([다운로드](https://www.docker.com/products/docker-desktop))
@@ -33,31 +35,20 @@ docker-compose up -d --build
 - JWT 기반 인증
 - 역할 기반 접근 제어 (USER, AUDITOR, ADMIN, OPERATOR)
 - 서비스 라우팅
-- API 엔드포인트:
-  - POST /auth/register: 회원가입
-  - POST /auth/login: 로그인
-  - POST /events: 이벤트 생성 (OPERATOR, ADMIN)
-  - POST /events/attendance: 출석 이벤트 생성 (OPERATOR, ADMIN)
-  - GET /events: 이벤트 목록 조회 (OPERATOR, ADMIN)
-  - GET /events/:eventId: 이벤트 상세 조회 (OPERATOR, ADMIN)
-  - POST /rewards: 보상 생성 (OPERATOR, ADMIN)
-  - GET /rewards/event/:eventId: 이벤트의 보상 목록 조회
-  - POST /rewards/request: 보상 요청
-  - GET /rewards/status: 보상 요청 내역 조회 (권한별 차등 적용)
 
-### Auth Service (Port: 3001)
+### Auth Service (gRPC Port: 50151)
 
 - 사용자 인증/인가
 - JWT 토큰 관리
 - 회원가입/로그인
 - 역할 기반 권한 관리
 
-### Event Service (Port: 3002)
+### Event Service (gRPC Port: 50152)
 
 - 이벤트 관리
   - 일반 이벤트
   - 출석 이벤트
-- 보상 시스템
+- 보상 시스템 (Event Service 내부 모듈로 통합)
   - 보상 생성 및 관리
   - 보상 요청 처리
   - 보상 상태 관리
@@ -66,8 +57,8 @@ docker-compose up -d --build
 ## 권한 체계
 
 - USER: 일반 사용자
+  - 보상 요청
   - 자신의 보상 내역만 조회 가능
-  - 보상 요청 가능
 - AUDITOR: 감사자
   - 모든 사용자의 보상 내역 조회 가능
   - 특정 사용자의 보상 내역 조회 가능
@@ -77,8 +68,8 @@ docker-compose up -d --build
   - 모든 사용자의 보상 내역 조회
 - OPERATOR: 운영자
   - 이벤트 및 보상 생성/관리
+  - 이벤트 상세 조회
   - 모든 사용자의 보상 내역 조회 가능
-  - 특정 사용자의 보상 내역 조회 가능
 
 ## 자주 쓰는 명령어
 
@@ -145,26 +136,6 @@ docker-compose up -d
 
 이미 사용 중인 포트가 있다면 docker-compose.yml 파일에서 포트 매핑을 수정하세요.
 
-## Service Details
-
-### API Gateway
-
-- Main entry point for the application
-- Handles routing to appropriate microservices
-- Manages API documentation
-
-### Authentication Service
-
-- Handles user authentication and authorization
-- Manages JWT tokens
-- User registration and login
-
-### Event Service
-
-- Manages events and notifications
-- Handles event creation and distribution
-- Event logging and tracking
-
 ## Development
 
 각 서비스별 개발 환경 실행:
@@ -222,89 +193,6 @@ npm run test
   - 보상 요청
   - 자신의 보상 상태 조회
 
-## API Endpoints
-
-### Auth Service
-
-- POST `/auth/login`
-  - 로그인
-  - Request Body: `{ "userId": string, "password": string }`
-  - Response: `{ "access_token": string, "user": { "userId": string } }`
-
-### Event Service
-
-- POST `/events`
-
-  - 이벤트 생성
-  - 권한: `ADMIN`, `OPERATOR`
-  - Request Body: `{ "title": string, "description": string }`
-
-- GET `/events`
-
-  - 이벤트 목록 조회
-  - Query Parameters:
-    - page: number
-    - limit: number
-    - searchKeyword: string
-
-- GET `/events/:eventId`
-  - 이벤트 상세 조회 (보상 정보 포함)
-  - 권한: `ADMIN`, `OPERATOR`
-
-### Reward Service
-
-- POST `/rewards`
-
-  - 보상 생성
-  - 권한: `ADMIN`, `OPERATOR`
-  - Request Body:
-    ```json
-    {
-      "eventId": string,
-      "title": string,
-      "description": string,
-      "requiredAttendance": number,
-      "rewardType": string,
-      "rewardValue": string,
-      "isActive": boolean
-    }
-    ```
-
-- GET `/rewards/status`
-
-  - 보상 상태 조회
-  - 권한: 인증된 사용자
-  - Query Parameters:
-    - eventId?: string (특정 이벤트의 보상 상태만 조회)
-    - userId?: string (관리자가 특정 사용자의 보상 상태 조회 시 사용)
-  - Response:
-    ```json
-    {
-      "success": boolean,
-      "message": string,
-      "statuses": [
-        {
-          "userId": string,
-          "eventId": string,
-          "rewardId": string,
-          "currentAttendance": number,
-          "isEligible": boolean,
-          "isClaimed": boolean
-        }
-      ]
-    }
-    ```
-
-- POST `/rewards/request`
-
-  - 보상 요청
-  - 권한: `USER`
-  - Request Body: `{ "eventId": string, "rewardId": string }`
-
-- GET `/rewards/history`
-  - 보상 히스토리 조회
-  - 권한: `ADMIN`, `AUDITOR`
-
 ## 에러 처리
 
 - 존재하지 않는 이벤트 ID로 요청 시:
@@ -325,6 +213,85 @@ npm run test
   ```json
   {
     "statusCode": 403,
-    "message": "Forbidden resource"
+    "message": "Forbidden resource",
+    "error": "해당 작업을 수행할 권한이 없습니다. 필요한 권한: [requiredRole]"
   }
   ```
+
+## API Documentation (Swagger)
+
+API Gateway에서는 Swagger를 통해 API 문서를 제공합니다.
+
+### Swagger UI 접속
+
+- URL: http://localhost:3000/api
+- Bearer 토큰 인증이 필요한 API의 경우, 우측 상단의 'Authorize' 버튼을 클릭하여 토큰을 입력해야 합니다.
+
+### API 그룹
+
+1. Auth
+
+   - POST /auth/register: 회원가입
+   - POST /auth/login: 로그인
+
+2. Events
+
+   - POST /events: 이벤트 생성 (OPERATOR, ADMIN)
+   - GET /events: 이벤트 목록 조회 (OPERATOR, ADMIN)
+   - GET /events/:eventId: 이벤트 상세 조회 (OPERATOR, ADMIN)
+   - POST /events/attendance: 출석 이벤트 생성 (OPERATOR, ADMIN)
+
+3. Rewards
+   - POST /rewards: 보상 생성 (OPERATOR, ADMIN)
+   - POST /rewards/request: 보상 요청 (USER)
+   - GET /rewards/history: 보상 히스토리 조회 (AUDITOR, ADMIN)
+   - GET /rewards/status: 보상 상태 조회
+
+### 인증
+
+1. Bearer 토큰 설정 방법:
+
+   - Swagger UI 우측 상단의 'Authorize' 버튼 클릭
+   - 발급받은 JWT 토큰을 'Bearer [token]' 형식으로 입력
+   - 'Authorize' 버튼 클릭하여 저장
+
+2. 토큰 발급:
+   - /auth/login API를 통해 로그인하여 토큰 발급
+   - 응답으로 받은 access_token을 Bearer 토큰으로 사용
+
+### Request/Response 예시
+
+각 API의 Request Body와 Response 형식은 Swagger UI에서 확인할 수 있습니다:
+
+1. Request Body 예시:
+
+   - 스키마 정의 확인
+   - 필수 필드 구분 (required)
+   - 각 필드의 타입과 설명
+   - 예시 값 제공
+
+2. Response 예시:
+   - 성공/실패 응답 코드
+   - 응답 데이터 구조
+   - 에러 메시지 형식
+
+### 권한 (Roles)
+
+API 접근 권한은 다음과 같이 구분됩니다:
+
+- USER: 일반 사용자 권한
+- OPERATOR: 운영자 권한
+- ADMIN: 관리자 권한
+- AUDITOR: 감사자 권한
+
+각 API의 필요 권한은 Swagger UI에서 API 설명에 명시되어 있습니다.
+
+## 추가 기능
+
+### 이벤트 수정
+
+어드민 권한을 가진 유저라면 이벤트정보를 수정할수있게 PUT 요청 기능 생성
+
+### 보상 수정
+
+어드민 권한을 가진 유저라면 보상정보를 수정할수있게 PUT 요청 기능 생성

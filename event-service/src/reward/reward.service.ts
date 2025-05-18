@@ -331,4 +331,81 @@ export class RewardService {
       };
     }
   }
+
+  async updateReward(data: {
+    rewardId: string;
+    title?: string;
+    description?: string;
+    requiredAttendance?: number;
+    rewardType?: string;
+    rewardValue?: string;
+    isActive?: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    reward: Reward;
+  }> {
+    try {
+      const rewardObjectId = this.toObjectId(data.rewardId, 'rewardId');
+
+      // 보상 존재 여부 확인
+      const existingReward = await this.rewardModel.findById(rewardObjectId);
+      if (!existingReward) {
+        throw new NotFoundException('존재하지 않는 보상입니다.');
+      }
+
+      // 업데이트할 필드 구성
+      const updateData = {};
+      if (data.title !== undefined) updateData['title'] = data.title;
+      if (data.description !== undefined)
+        updateData['description'] = data.description;
+      if (data.requiredAttendance !== undefined)
+        updateData['requiredAttendance'] = data.requiredAttendance;
+      if (data.rewardType !== undefined)
+        updateData['rewardType'] = data.rewardType;
+      if (data.rewardValue !== undefined)
+        updateData['rewardValue'] = data.rewardValue;
+      if (data.isActive !== undefined) updateData['isActive'] = data.isActive;
+
+      // 보상 정보 업데이트
+      const updatedReward = await this.rewardModel.findByIdAndUpdate(
+        rewardObjectId,
+        {
+          $set: updateData,
+          updatedAt: new Date(),
+        },
+        { new: true },
+      );
+
+      return {
+        success: true,
+        message: '보상이 성공적으로 수정되었습니다.',
+        reward: updatedReward,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return {
+          success: false,
+          message: error.message,
+          reward: null,
+        };
+      }
+      if (error instanceof BadRequestException) {
+        return {
+          success: false,
+          message: error.message,
+          reward: null,
+        };
+      }
+      this.logger.error(
+        `보상 수정 중 오류 발생: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: '보상 수정 중 오류가 발생했습니다.',
+        reward: null,
+      };
+    }
+  }
 }

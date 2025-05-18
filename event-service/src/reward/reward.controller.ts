@@ -41,4 +41,17 @@ export class RewardController {
       data.rewardId,
     );
   }
+
+  @GrpcMethod('RewardService', 'UpdateReward')
+  async updateReward(data: {
+    rewardId: string;
+    title?: string;
+    description?: string;
+    requiredAttendance?: number;
+    rewardType?: string;
+    rewardValue?: string;
+    isActive?: boolean;
+  }) {
+    return this.rewardService.updateReward(data);
+  }
 }

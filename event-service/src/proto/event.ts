@@ -92,6 +92,22 @@ export interface GetEventDetailResponse {
   rewards: Reward[];
 }
 
+export interface UpdateEventRequest {
+  eventId: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  requiredDays: number;
+}
+
+export interface UpdateEventResponse {
+  success: boolean;
+  message: string;
+  event: AttendanceEvent | undefined;
+}
+
 function createBaseReward(): Reward {
   return {
     id: "",
@@ -1084,6 +1100,196 @@ export const GetEventDetailResponse: MessageFns<GetEventDetailResponse> = {
   },
 };
 
+function createBaseUpdateEventRequest(): UpdateEventRequest {
+  return { eventId: "", title: "", description: "", startDate: "", endDate: "", isActive: false, requiredDays: 0 };
+}
+
+export const UpdateEventRequest: MessageFns<UpdateEventRequest> = {
+  encode(message: UpdateEventRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.eventId !== "") {
+      writer.uint32(10).string(message.eventId);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.startDate !== "") {
+      writer.uint32(34).string(message.startDate);
+    }
+    if (message.endDate !== "") {
+      writer.uint32(42).string(message.endDate);
+    }
+    if (message.isActive !== false) {
+      writer.uint32(48).bool(message.isActive);
+    }
+    if (message.requiredDays !== 0) {
+      writer.uint32(56).int32(message.requiredDays);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateEventRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateEventRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.startDate = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.endDate = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.requiredDays = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateEventRequest>, I>>(base?: I): UpdateEventRequest {
+    return UpdateEventRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateEventRequest>, I>>(object: I): UpdateEventRequest {
+    const message = createBaseUpdateEventRequest();
+    message.eventId = object.eventId ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.startDate = object.startDate ?? "";
+    message.endDate = object.endDate ?? "";
+    message.isActive = object.isActive ?? false;
+    message.requiredDays = object.requiredDays ?? 0;
+    return message;
+  },
+};
+
+function createBaseUpdateEventResponse(): UpdateEventResponse {
+  return { success: false, message: "", event: undefined };
+}
+
+export const UpdateEventResponse: MessageFns<UpdateEventResponse> = {
+  encode(message: UpdateEventResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.event !== undefined) {
+      AttendanceEvent.encode(message.event, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateEventResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateEventResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.event = AttendanceEvent.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateEventResponse>, I>>(base?: I): UpdateEventResponse {
+    return UpdateEventResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateEventResponse>, I>>(object: I): UpdateEventResponse {
+    const message = createBaseUpdateEventResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.event = (object.event !== undefined && object.event !== null)
+      ? AttendanceEvent.fromPartial(object.event)
+      : undefined;
+    return message;
+  },
+};
+
 export interface EventService {
   CreateEvent(request: CreateEventRequest, metadata?: Metadata): Promise<Event>;
   CreateAttendanceEvent(
@@ -1092,6 +1298,7 @@ export interface EventService {
   ): Promise<CreateAttendanceEventResponse>;
   ListEvents(request: ListEventsRequest, metadata?: Metadata): Promise<ListEventsResponse>;
   GetEventDetail(request: GetEventDetailRequest, metadata?: Metadata): Promise<GetEventDetailResponse>;
+  UpdateEvent(request: UpdateEventRequest, metadata?: Metadata): Promise<UpdateEventResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
