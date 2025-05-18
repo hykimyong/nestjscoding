@@ -24,8 +24,6 @@ docker-compose up -d --build
 ## 접속 정보
 
 - API Gateway: http://localhost:3000
-- Auth Service: http://localhost:3001
-- Event Service: http://localhost:3002
 - MongoDB: mongodb://localhost:27017 (root/example)
 
 ## 프로젝트 구조

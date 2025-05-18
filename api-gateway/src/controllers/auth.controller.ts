@@ -28,9 +28,9 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User successfully registered.' })
-  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiOperation({ summary: '회원 가입' })
+  @ApiResponse({ status: 201, description: '회원 가입 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
   async register(@Body() registerDto: RegisterDto): Promise<RegisterResponse> {
     try {
       const response = await lastValueFrom(

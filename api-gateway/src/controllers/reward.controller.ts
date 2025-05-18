@@ -52,10 +52,10 @@ export class RewardController {
   @Roles(Role.USER)
   @ApiOperation({ summary: '보상 요청' })
   @ApiResponse({ status: 200, description: '보상 요청 성공' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden. Only USER role can request rewards.',
+    description: '권한 없음. USER 권한만 보상을 요청할 수 있습니다.',
   })
   async requestReward(
     @Request() req,
@@ -78,9 +78,9 @@ export class RewardController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OPERATOR, Role.ADMIN)
-  @ApiOperation({ summary: 'Create a new reward' })
-  @ApiResponse({ status: 201, description: 'Reward successfully created.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiOperation({ summary: '보상 생성' })
+  @ApiResponse({ status: 201, description: '보상 생성 성공' })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   async createReward(
     @Body() createRewardDto: CreateRewardDto,
   ): Promise<CreateRewardResponse> {
@@ -100,15 +100,15 @@ export class RewardController {
   @Get('status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.USER, Role.OPERATOR, Role.ADMIN, Role.AUDITOR)
-  @ApiOperation({ summary: 'Get user reward status' })
+  @ApiOperation({ summary: '보상 상태 조회' })
   @ApiResponse({
     status: 200,
-    description: 'User reward status retrieved successfully.',
+    description: '보상 상태 조회 성공',
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Insufficient role.',
+    description: '권한 없음',
   })
   @ApiQuery({
     name: 'eventId',
@@ -172,10 +172,10 @@ export class RewardController {
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: '보상 정보 수정' })
   @ApiResponse({ status: 200, description: '보상이 성공적으로 수정됨' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden. Only OPERATOR or ADMIN can update rewards.',
+    description: '권한 없음. ADMIN 권한만 보상을 수정할 수 있습니다.',
   })
   @ApiResponse({ status: 404, description: '보상을 찾을 수 없음' })
   async updateReward(

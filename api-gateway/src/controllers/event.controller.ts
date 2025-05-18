@@ -73,8 +73,8 @@ export class EventController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OPERATOR, Role.ADMIN)
-  @ApiOperation({ summary: 'List all events with pagination' })
-  @ApiResponse({ status: 200, description: 'Events retrieved successfully.' })
+  @ApiOperation({ summary: '이벤트 목록 조회' })
+  @ApiResponse({ status: 200, description: '이벤트 목록 조회 성공' })
   async listEvents(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -126,10 +126,10 @@ export class EventController {
   @Post('attendance')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OPERATOR, Role.ADMIN)
-  @ApiOperation({ summary: 'Create a new attendance event' })
+  @ApiOperation({ summary: '출석 이벤트 생성' })
   @ApiResponse({
     status: 201,
-    description: 'Attendance event successfully created.',
+    description: '출석 이벤트가 성공적으로 생성됨',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async createAttendanceEvent(

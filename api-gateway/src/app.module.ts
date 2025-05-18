@@ -22,7 +22,7 @@ import { RewardController } from './controllers/reward.controller';
           options: {
             package: 'auth',
             protoPath: join(__dirname, 'proto/auth.proto'),
-            url: 'localhost:50151',
+            url: 'auth-service:50151',
           },
         }),
       },
@@ -33,7 +33,7 @@ import { RewardController } from './controllers/reward.controller';
           options: {
             package: 'event',
             protoPath: join(__dirname, 'proto/event.proto'),
-            url: 'localhost:50152',
+            url: 'event-service:50152',
           },
         }),
       },
@@ -44,7 +44,7 @@ import { RewardController } from './controllers/reward.controller';
           options: {
             package: 'reward',
             protoPath: join(__dirname, 'proto/reward.proto'),
-            url: 'localhost:50152',
+            url: 'event-service:50152',
           },
         }),
       },
