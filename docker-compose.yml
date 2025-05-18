@@ -39,7 +39,7 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/auth
+      - MONGODB_URI=mongodb://root:example@mongodb:27017/auth?authSource=admin
     networks:
       - app-network
 
@@ -51,7 +51,7 @@ services:
     depends_on:
       - mongodb
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/events
+      - MONGODB_URI=mongodb://root:example@mongodb:27017/events?authSource=admin
     networks:
       - app-network
 

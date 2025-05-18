@@ -31,8 +31,8 @@ export const RewardSchema = SchemaFactory.createForClass(Reward);
 
 @Schema({ timestamps: true })
 export class UserRewardStatus extends Document {
-  @Prop({ type: Types.ObjectId, required: true })
-  userId: Types.ObjectId;
+  @Prop({ type: String, required: true })
+  userId: string;
 
   @Prop({ type: Types.ObjectId, required: true })
   eventId: Types.ObjectId;
@@ -51,6 +51,15 @@ export class UserRewardStatus extends Document {
 
   @Prop()
   claimedAt: Date;
+
+  @Prop({ default: 1 })
+  requestCount: number;
+
+  @Prop({ required: true })
+  requestedAt: Date;
+
+  @Prop({ default: false })
+  isSuccess: boolean;
 }
 
 export type UserRewardStatusDocument = UserRewardStatus & Document;

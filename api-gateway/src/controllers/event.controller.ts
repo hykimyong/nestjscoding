@@ -81,9 +81,6 @@ export class EventController {
     @Query('search') searchKeyword?: string,
   ) {
     try {
-      this.logger.debug(
-        `Listing events - page: ${page}, limit: ${limit}, search: ${searchKeyword}`,
-      );
       return await lastValueFrom(
         from(
           this.eventService.ListEvents({
@@ -114,7 +111,6 @@ export class EventController {
   })
   async getEventDetail(@Param('eventId') eventId: string) {
     try {
-      this.logger.debug(`Getting event detail for: ${eventId}`);
       return await lastValueFrom(
         from(this.eventService.GetEventDetail({ eventId })),
       );
@@ -140,9 +136,6 @@ export class EventController {
     @Body() createAttendanceEventDto: CreateAttendanceEventDto,
   ): Promise<CreateAttendanceEventResponse> {
     try {
-      this.logger.debug(
-        `Creating attendance event: ${createAttendanceEventDto.title}`,
-      );
       return await lastValueFrom(
         from(this.eventService.CreateAttendanceEvent(createAttendanceEventDto)),
       );
@@ -167,7 +160,6 @@ export class EventController {
   })
   async updateEvent(@Param('id') id: string, @Body() updateEventDto: any) {
     try {
-      this.logger.debug(`Updating event: ${id}`);
       return await lastValueFrom(
         from(this.eventService.UpdateEvent({ eventId: id, ...updateEventDto })),
       );

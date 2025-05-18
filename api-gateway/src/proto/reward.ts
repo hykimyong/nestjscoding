@@ -70,6 +70,10 @@ export interface UserRewardStatus {
   isClaimed: boolean;
   /** 보상 수령 일시 */
   claimedAt: string;
+  requestCount: number;
+  lastRequestedAt: string;
+  /** 마지막 요청 성공 여부 */
+  isSuccess: boolean;
 }
 
 export interface GetUserRewardStatusRequest {
@@ -599,6 +603,9 @@ function createBaseUserRewardStatus(): UserRewardStatus {
     isEligible: false,
     isClaimed: false,
     claimedAt: "",
+    requestCount: 0,
+    lastRequestedAt: "",
+    isSuccess: false,
   };
 }
 
@@ -624,6 +631,15 @@ export const UserRewardStatus: MessageFns<UserRewardStatus> = {
     }
     if (message.claimedAt !== "") {
       writer.uint32(58).string(message.claimedAt);
+    }
+    if (message.requestCount !== 0) {
+      writer.uint32(64).int32(message.requestCount);
+    }
+    if (message.lastRequestedAt !== "") {
+      writer.uint32(74).string(message.lastRequestedAt);
+    }
+    if (message.isSuccess !== false) {
+      writer.uint32(80).bool(message.isSuccess);
     }
     return writer;
   },
@@ -691,6 +707,30 @@ export const UserRewardStatus: MessageFns<UserRewardStatus> = {
           message.claimedAt = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.requestCount = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.lastRequestedAt = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.isSuccess = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -712,6 +752,9 @@ export const UserRewardStatus: MessageFns<UserRewardStatus> = {
     message.isEligible = object.isEligible ?? false;
     message.isClaimed = object.isClaimed ?? false;
     message.claimedAt = object.claimedAt ?? "";
+    message.requestCount = object.requestCount ?? 0;
+    message.lastRequestedAt = object.lastRequestedAt ?? "";
+    message.isSuccess = object.isSuccess ?? false;
     return message;
   },
 };

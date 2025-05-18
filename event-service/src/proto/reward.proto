@@ -8,6 +8,7 @@ service RewardService {
   rpc GetUserRewardStatus (GetUserRewardStatusRequest) returns (GetUserRewardStatusResponse);
   rpc RequestReward (RequestRewardRequest) returns (RequestRewardResponse);
   rpc UpdateReward (UpdateRewardRequest) returns (UpdateRewardResponse);
+  rpc GetRewardHistory(GetRewardHistoryRequest) returns (GetRewardHistoryResponse) {}
 }
 
 message Reward {
@@ -57,6 +58,9 @@ message UserRewardStatus {
   bool isEligible = 5;          // 보상 수령 가능 여부
   bool isClaimed = 6;           // 보상 수령 여부
   string claimedAt = 7;         // 보상 수령 일시
+  int32 requestCount = 8;
+  string lastRequestedAt = 9;
+  bool isSuccess = 10;          // 마지막 요청 성공 여부
 }
 
 message GetUserRewardStatusRequest {
@@ -96,4 +100,26 @@ message UpdateRewardResponse {
   bool success = 1;
   string message = 2;
   Reward reward = 3;
+}
+
+message GetRewardHistoryRequest {
+  string userId = 1;
+}
+
+message RewardHistoryItem {
+  string rewardId = 1;
+  string eventId = 2;
+  string userId = 3;
+  string title = 4;
+  string description = 5;
+  string rewardType = 6;
+  string rewardValue = 7;
+  bool isClaimed = 8;
+  string claimedAt = 9;
+}
+
+message GetRewardHistoryResponse {
+  bool success = 1;
+  string message = 2;
+  repeated RewardHistoryItem rewards = 3;
 } 

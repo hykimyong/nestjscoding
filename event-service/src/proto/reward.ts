@@ -70,6 +70,10 @@ export interface UserRewardStatus {
   isClaimed: boolean;
   /** 보상 수령 일시 */
   claimedAt: string;
+  requestCount: number;
+  lastRequestedAt: string;
+  /** 마지막 요청 성공 여부 */
+  isSuccess: boolean;
 }
 
 export interface GetUserRewardStatusRequest {
@@ -109,6 +113,28 @@ export interface UpdateRewardResponse {
   success: boolean;
   message: string;
   reward: Reward | undefined;
+}
+
+export interface GetRewardHistoryRequest {
+  userId: string;
+}
+
+export interface RewardHistoryItem {
+  rewardId: string;
+  eventId: string;
+  userId: string;
+  title: string;
+  description: string;
+  rewardType: string;
+  rewardValue: string;
+  isClaimed: boolean;
+  claimedAt: string;
+}
+
+export interface GetRewardHistoryResponse {
+  success: boolean;
+  message: string;
+  rewards: RewardHistoryItem[];
 }
 
 function createBaseReward(): Reward {
@@ -599,6 +625,9 @@ function createBaseUserRewardStatus(): UserRewardStatus {
     isEligible: false,
     isClaimed: false,
     claimedAt: "",
+    requestCount: 0,
+    lastRequestedAt: "",
+    isSuccess: false,
   };
 }
 
@@ -624,6 +653,15 @@ export const UserRewardStatus: MessageFns<UserRewardStatus> = {
     }
     if (message.claimedAt !== "") {
       writer.uint32(58).string(message.claimedAt);
+    }
+    if (message.requestCount !== 0) {
+      writer.uint32(64).int32(message.requestCount);
+    }
+    if (message.lastRequestedAt !== "") {
+      writer.uint32(74).string(message.lastRequestedAt);
+    }
+    if (message.isSuccess !== false) {
+      writer.uint32(80).bool(message.isSuccess);
     }
     return writer;
   },
@@ -691,6 +729,30 @@ export const UserRewardStatus: MessageFns<UserRewardStatus> = {
           message.claimedAt = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.requestCount = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.lastRequestedAt = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.isSuccess = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -712,6 +774,9 @@ export const UserRewardStatus: MessageFns<UserRewardStatus> = {
     message.isEligible = object.isEligible ?? false;
     message.isClaimed = object.isClaimed ?? false;
     message.claimedAt = object.claimedAt ?? "";
+    message.requestCount = object.requestCount ?? 0;
+    message.lastRequestedAt = object.lastRequestedAt ?? "";
+    message.isSuccess = object.isSuccess ?? false;
     return message;
   },
 };
@@ -1184,12 +1249,281 @@ export const UpdateRewardResponse: MessageFns<UpdateRewardResponse> = {
   },
 };
 
+function createBaseGetRewardHistoryRequest(): GetRewardHistoryRequest {
+  return { userId: "" };
+}
+
+export const GetRewardHistoryRequest: MessageFns<GetRewardHistoryRequest> = {
+  encode(message: GetRewardHistoryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRewardHistoryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRewardHistoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<GetRewardHistoryRequest>, I>>(base?: I): GetRewardHistoryRequest {
+    return GetRewardHistoryRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetRewardHistoryRequest>, I>>(object: I): GetRewardHistoryRequest {
+    const message = createBaseGetRewardHistoryRequest();
+    message.userId = object.userId ?? "";
+    return message;
+  },
+};
+
+function createBaseRewardHistoryItem(): RewardHistoryItem {
+  return {
+    rewardId: "",
+    eventId: "",
+    userId: "",
+    title: "",
+    description: "",
+    rewardType: "",
+    rewardValue: "",
+    isClaimed: false,
+    claimedAt: "",
+  };
+}
+
+export const RewardHistoryItem: MessageFns<RewardHistoryItem> = {
+  encode(message: RewardHistoryItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rewardId !== "") {
+      writer.uint32(10).string(message.rewardId);
+    }
+    if (message.eventId !== "") {
+      writer.uint32(18).string(message.eventId);
+    }
+    if (message.userId !== "") {
+      writer.uint32(26).string(message.userId);
+    }
+    if (message.title !== "") {
+      writer.uint32(34).string(message.title);
+    }
+    if (message.description !== "") {
+      writer.uint32(42).string(message.description);
+    }
+    if (message.rewardType !== "") {
+      writer.uint32(50).string(message.rewardType);
+    }
+    if (message.rewardValue !== "") {
+      writer.uint32(58).string(message.rewardValue);
+    }
+    if (message.isClaimed !== false) {
+      writer.uint32(64).bool(message.isClaimed);
+    }
+    if (message.claimedAt !== "") {
+      writer.uint32(74).string(message.claimedAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RewardHistoryItem {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRewardHistoryItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rewardId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.eventId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.rewardType = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.rewardValue = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.isClaimed = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.claimedAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<RewardHistoryItem>, I>>(base?: I): RewardHistoryItem {
+    return RewardHistoryItem.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RewardHistoryItem>, I>>(object: I): RewardHistoryItem {
+    const message = createBaseRewardHistoryItem();
+    message.rewardId = object.rewardId ?? "";
+    message.eventId = object.eventId ?? "";
+    message.userId = object.userId ?? "";
+    message.title = object.title ?? "";
+    message.description = object.description ?? "";
+    message.rewardType = object.rewardType ?? "";
+    message.rewardValue = object.rewardValue ?? "";
+    message.isClaimed = object.isClaimed ?? false;
+    message.claimedAt = object.claimedAt ?? "";
+    return message;
+  },
+};
+
+function createBaseGetRewardHistoryResponse(): GetRewardHistoryResponse {
+  return { success: false, message: "", rewards: [] };
+}
+
+export const GetRewardHistoryResponse: MessageFns<GetRewardHistoryResponse> = {
+  encode(message: GetRewardHistoryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    for (const v of message.rewards) {
+      RewardHistoryItem.encode(v!, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRewardHistoryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRewardHistoryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.rewards.push(RewardHistoryItem.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  create<I extends Exact<DeepPartial<GetRewardHistoryResponse>, I>>(base?: I): GetRewardHistoryResponse {
+    return GetRewardHistoryResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetRewardHistoryResponse>, I>>(object: I): GetRewardHistoryResponse {
+    const message = createBaseGetRewardHistoryResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    message.rewards = object.rewards?.map((e) => RewardHistoryItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 export interface RewardService {
   CreateReward(request: CreateRewardRequest, metadata?: Metadata): Promise<CreateRewardResponse>;
   GetEventRewards(request: GetEventRewardsRequest, metadata?: Metadata): Promise<GetEventRewardsResponse>;
   GetUserRewardStatus(request: GetUserRewardStatusRequest, metadata?: Metadata): Promise<GetUserRewardStatusResponse>;
   RequestReward(request: RequestRewardRequest, metadata?: Metadata): Promise<RequestRewardResponse>;
   UpdateReward(request: UpdateRewardRequest, metadata?: Metadata): Promise<UpdateRewardResponse>;
+  GetRewardHistory(request: GetRewardHistoryRequest, metadata?: Metadata): Promise<GetRewardHistoryResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

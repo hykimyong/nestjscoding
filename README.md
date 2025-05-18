@@ -59,23 +59,23 @@ docker-compose up -d --build
 - USER: 일반 사용자 (기본 계정: user/user1234)
 
   - 보상 요청
-  - 자신의 보상 내역만 조회 가능
+  - 자신의 보상 상태만 조회 가능
 
 - AUDITOR: 감사자 (기본 계정: auditor/auditor1234)
 
-  - 모든 사용자의 보상 내역 조회 가능
-  - 특정 사용자의 보상 내역 조회 가능
+  - 모든 사용자의 보상 상태 조회 가능
+  - 특정 사용자의 보상 상태 조회 가능
 
 - ADMIN: 관리자 (기본 계정: admin/admin1234)
 
   - 모든 기능 접근 가능
   - 이벤트 및 보상 생성/관리
-  - 모든 사용자의 보상 내역 조회
+  - 모든 사용자의 보상 상태 조회
 
 - OPERATOR: 운영자 (기본 계정: operator/operator1234)
   - 이벤트 및 보상 생성/관리
   - 이벤트 상세 조회
-  - 모든 사용자의 보상 내역 조회 가능
+  - 모든 사용자의 보상 상태 조회 가능
 
 ## 자주 쓰는 명령어
 
@@ -189,12 +189,13 @@ npm run test
   - 모든 기능에 접근 가능
   - 이벤트 상세 조회
   - 보상 생성
-  - 보상 히스토리 조회
+  - 모든 사용자의 보상 상태 조회
 - `OPERATOR`: 운영자
   - 이벤트 상세 조회
   - 보상 생성
+  - 모든 사용자의 보상 상태 조회
 - `AUDITOR`: 감사자
-  - 보상 히스토리 조회
+  - 모든 사용자의 보상 상태 조회
 - `USER`: 일반 사용자
   - 보상 요청
   - 자신의 보상 상태 조회
@@ -250,8 +251,13 @@ API Gateway에서는 Swagger를 통해 API 문서를 제공합니다.
 3. Rewards
    - POST /rewards: 보상 생성 (OPERATOR, ADMIN)
    - POST /rewards/request: 보상 요청 (USER)
-   - GET /rewards/history: 보상 히스토리 조회 (AUDITOR, ADMIN)
    - GET /rewards/status: 보상 상태 조회
+     - USER: 자신의 보상 상태만 조회 가능 (userId 파라미터 무시)
+     - AUDITOR: 모든/특정 사용자의 보상 상태 조회 가능 (userId 파라미터 필수)
+     - OPERATOR: 모든/특정 사용자의 보상 상태 조회 가능 (userId 파라미터 필수)
+     - ADMIN: 모든/특정 사용자의 보상 상태 조회 가능 (userId 파라미터 필수)
+     - 조회 결과에는 요청 횟수(requestCount), 마지막 요청 시간(lastRequestedAt), 성공 여부(isSuccess) 포함
+     - eventId 파라미터로 특정 이벤트의 보상 상태만 조회 가능
 
 ### 인증
 

@@ -12,6 +12,8 @@ import {
   Query,
   Put,
   Param,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { lastValueFrom, from } from 'rxjs';
@@ -73,29 +75,6 @@ export class RewardController {
     }
   }
 
-  @Get('history')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.AUDITOR, Role.ADMIN)
-  @ApiOperation({ summary: 'Get reward history' })
-  @ApiResponse({
-    status: 200,
-    description: 'Reward history retrieved successfully.',
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async getRewardHistory(@Request() req) {
-    try {
-      return await lastValueFrom(
-        from(this.rewardService.GetRewardHistory({ userId: req.user.userId })),
-      );
-    } catch (error) {
-      this.logger.error(`Failed to get reward history: ${error.message}`);
-      throw new HttpException(
-        error.message || 'Internal server error',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.OPERATOR, Role.ADMIN)
@@ -119,13 +98,18 @@ export class RewardController {
   }
 
   @Get('status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER, Role.OPERATOR, Role.ADMIN, Role.AUDITOR)
   @ApiOperation({ summary: 'Get user reward status' })
   @ApiResponse({
     status: 200,
     description: 'User reward status retrieved successfully.',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient role.',
+  })
   @ApiQuery({
     name: 'eventId',
     required: false,
@@ -134,16 +118,29 @@ export class RewardController {
   @ApiQuery({
     name: 'userId',
     required: false,
-    description: '관리자가 특정 사용자의 보상 상태 조회 시 사용',
+    description:
+      '관리자/운영자/감사자가 특정 사용자의 보상 상태 조회 시 사용 (USER 권한은 사용 불가)',
   })
   async getUserRewardStatus(
     @Request() req,
-    @Query('userId') targetUserId?: string,
+    @Query('userId') userId?: string,
     @Query('eventId') eventId?: string,
   ) {
     try {
-      const userId = targetUserId || req.user.userId;
-      return await lastValueFrom(
+      // USER 권한인 경우 무조건 토큰의 userId 사용하고, userId 파라미터는 무시
+      if (req.user.roles.includes(Role.USER)) {
+        if (userId && userId !== req.user.sub) {
+          throw new ForbiddenException(
+            'USER 권한으로는 다른 사용자의 보상 상태를 조회할 수 없습니다.',
+          );
+        }
+        userId = req.user.sub;
+      } else if (!userId) {
+        // ADMIN/OPERATOR/AUDITOR가 userId를 지정하지 않은 경우 전체 조회 불가
+        throw new BadRequestException('사용자 ID를 지정해야 합니다.');
+      }
+
+      const response = await lastValueFrom(
         from(
           this.rewardService.GetUserRewardStatus({
             userId,
@@ -151,8 +148,18 @@ export class RewardController {
           }),
         ),
       );
+
+      // 응답이 비어있는 경우에도 statuses 배열을 포함하도록 보장
+      if (!response.statuses) {
+        response.statuses = [];
+      }
+
+      return response;
     } catch (error) {
       this.logger.error(`Failed to get user reward status: ${error.message}`);
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Internal server error',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,

@@ -13,7 +13,6 @@ import {
   UserRewardStatusDocument,
 } from '../schemas/reward.schema';
 import { Event, EventDocument } from '../schemas/event.schema';
-import { RequestRewardDto } from '../dto/request-reward.dto';
 
 @Injectable()
 export class RewardService {
@@ -121,19 +120,14 @@ export class RewardService {
     statuses: UserRewardStatus[];
   }> {
     try {
-      let query = {};
+      const query: any = {};
 
-      // userId가 있는 경우 해당 사용자의 보상 상태만 조회
       if (userId) {
-        const userObjectId = this.toObjectId(userId, 'userId');
-        query['userId'] = userObjectId;
+        query['userId'] = userId;
       }
 
-      // eventId가 있는 경우 해당 이벤트의 보상 상태만 조회
       if (eventId) {
         const eventObjectId = this.toObjectId(eventId, 'eventId');
-
-        // 이벤트 존재 여부 확인
         const eventExists = await this.eventModel.exists({
           _id: eventObjectId,
         });
@@ -144,22 +138,18 @@ export class RewardService {
             statuses: [],
           };
         }
-
         query['eventId'] = eventObjectId;
       }
 
-      // 보상 상태 조회
+      // 최신 요청 시간 기준으로 정렬하여 조회
       const statuses = await this.userRewardStatusModel
         .find(query)
+        .sort({ requestedAt: -1 })
         .populate('rewardId')
         .exec();
 
-      // 조회된 결과가 없는 경우
       if (statuses.length === 0 && userId && eventId) {
-        // 특정 사용자와 이벤트에 대한 조회인 경우, 해당 이벤트의 모든 보상에 대한 상태 생성
         const eventObjectId = this.toObjectId(eventId, 'eventId');
-        const userObjectId = this.toObjectId(userId, 'userId');
-
         const rewards = await this.rewardModel
           .find({ eventId: eventObjectId })
           .exec();
@@ -167,12 +157,15 @@ export class RewardService {
         const newStatuses = await Promise.all(
           rewards.map(async (reward) => {
             const status = new this.userRewardStatusModel({
-              userId: userObjectId,
+              userId,
               eventId: eventObjectId,
               rewardId: reward._id,
               currentAttendance: 0,
               isEligible: false,
               isClaimed: false,
+              requestCount: 0,
+              requestedAt: new Date(),
+              isSuccess: false,
             });
             await status.save();
             return status;
@@ -220,11 +213,6 @@ export class RewardService {
       throw new BadRequestException(`${fieldName}가 제공되지 않았습니다.`);
     }
 
-    // userId는 ObjectId가 아닌 일반 문자열이므로 검증하지 않음
-    if (fieldName === 'userId') {
-      return id as any;
-    }
-
     if (!this.isValidObjectId(id)) {
       throw new BadRequestException(`유효하지 않은 ${fieldName} 형식입니다.`);
     }
@@ -232,35 +220,97 @@ export class RewardService {
     return new Types.ObjectId(id);
   }
 
-  async requestReward(data: RequestRewardDto) {
+  async requestReward(
+    userId: string,
+    eventId: string,
+    rewardId: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    status: UserRewardStatus;
+  }> {
     try {
-      const reward = await this.rewardModel.findById(data.rewardId);
+      const eventObjectId = this.toObjectId(eventId, 'eventId');
+      const rewardObjectId = this.toObjectId(rewardId, 'rewardId');
+
+      const reward = await this.rewardModel.findById(rewardObjectId).exec();
       if (!reward) {
-        throw new Error('Reward not found');
+        throw new NotFoundException('보상을 찾을 수 없습니다.');
       }
 
-      let status = await this.userRewardStatusModel.findOne({
-        userId: data.userId,
-        rewardId: data.rewardId,
+      // 이전 요청 기록 조회
+      const previousRequests = await this.userRewardStatusModel
+        .find({
+          userId: userId,
+          eventId: eventObjectId,
+          rewardId: rewardObjectId,
+        })
+        .sort({ requestedAt: -1 });
+
+      const now = new Date();
+      const requestCount = previousRequests.length + 1;
+      const lastRequest = previousRequests[0];
+
+      const requestSuccess = lastRequest
+        ? lastRequest.currentAttendance >= reward.requiredAttendance &&
+          !lastRequest.isClaimed
+        : false;
+
+      // 새로운 요청 생성
+      const status = new this.userRewardStatusModel({
+        userId: userId,
+        eventId: eventObjectId,
+        rewardId: rewardObjectId,
+        currentAttendance: lastRequest ? lastRequest.currentAttendance : 0,
+        isEligible: lastRequest ? lastRequest.isEligible : false,
+        isClaimed: lastRequest ? lastRequest.isClaimed : false,
+        claimedAt: lastRequest?.claimedAt,
+        requestCount: requestCount,
+        requestedAt: now,
+        isSuccess: requestSuccess,
       });
 
-      if (!status) {
-        status = await this.userRewardStatusModel.create({
-          userId: data.userId,
-          rewardId: data.rewardId,
-          claimed: true,
-          claimedAt: new Date(),
-        });
-      } else {
-        status.claimed = true;
-        status.claimedAt = new Date();
-        await status.save();
+      if (requestSuccess) {
+        status.isEligible = true;
+        status.isClaimed = true;
+        status.claimedAt = now;
       }
 
-      return status;
+      await status.save();
+
+      // 응답 메시지 생성
+      let message = '';
+      if (status.isClaimed && !requestSuccess) {
+        message = '이미 수령한 보상입니다.';
+      } else if (!requestSuccess) {
+        message = `출석 횟수가 부족합니다. (현재: ${status.currentAttendance}, 필요: ${reward.requiredAttendance})`;
+      } else {
+        message = '보상이 성공적으로 지급되었습니다.';
+      }
+
+      return {
+        success: requestSuccess,
+        message,
+        status,
+      };
     } catch (error) {
-      this.logger.error(`Failed to request reward: ${error.message}`);
-      throw error;
+      this.logger.error('Error in requestReward:', error.message, error.stack);
+      if (error instanceof BadRequestException) {
+        return {
+          success: false,
+          message: error.message,
+          status: null,
+        };
+      }
+      this.logger.error(
+        `보상 요청 처리 중 오류 발생: ${error.message}`,
+        error.stack,
+      );
+      return {
+        success: false,
+        message: '보상 요청 처리 중 오류가 발생했습니다.',
+        status: null,
+      };
     }
   }
 

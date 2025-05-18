@@ -57,6 +57,9 @@ message UserRewardStatus {
   bool isEligible = 5;          // 보상 수령 가능 여부
   bool isClaimed = 6;           // 보상 수령 여부
   string claimedAt = 7;         // 보상 수령 일시
+  int32 requestCount = 8;
+  string lastRequestedAt = 9;
+  bool isSuccess = 10;          // 마지막 요청 성공 여부
 }
 
 message GetUserRewardStatusRequest {
